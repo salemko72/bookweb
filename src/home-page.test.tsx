@@ -1,23 +1,43 @@
-﻿import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+﻿import { render, screen, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { HomePage } from './pages/HomePage'
 
+const { getDailyOperationalDataMock, getPropertiesMock } = vi.hoisted(() => ({
+  getDailyOperationalDataMock: vi.fn(),
+  getPropertiesMock: vi.fn(),
+}))
+
+vi.mock('./lib/operational-repository', () => ({
+  getDailyOperationalData: getDailyOperationalDataMock,
+}))
+
+vi.mock('./lib/properties-repository', () => ({
+  getProperties: getPropertiesMock,
+}))
+
 describe('HomePage', () => {
-  it('shows the daily operational overview', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    getDailyOperationalDataMock.mockResolvedValue({
+      reservations: [],
+      cleanings: [],
+    })
+
+    getPropertiesMock.mockResolvedValue([])
+  })
+
+  it('shows the daily operational overview', async () => {
     render(<HomePage />)
 
-    expect(screen.getByText(/good morning, kate/i)).toBeInTheDocument()
+    expect(await screen.findByText(/good morning, kate/i)).toBeInTheDocument()
+    expect(screen.getByText('Check-ins')).toBeInTheDocument()
+    expect(screen.getByText('Check-outs')).toBeInTheDocument()
+    expect(screen.getByText('Cleanings')).toBeInTheDocument()
 
-    expect(
-      screen.getByText('Check-ins', { exact: true }),
-    ).toBeInTheDocument()
-
-    expect(
-      screen.getByText('Check-outs', { exact: true }),
-    ).toBeInTheDocument()
-
-    expect(
-      screen.getByText('Cleanings', { exact: true }),
-    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(getDailyOperationalDataMock).toHaveBeenCalled()
+      expect(getPropertiesMock).toHaveBeenCalled()
+    })
   })
 })
