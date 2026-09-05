@@ -1,4 +1,9 @@
-﻿export function getLoginValidationError(
+﻿export type AuthenticatedUser = {
+  id: string
+  email: string | undefined
+}
+
+export function getLoginValidationError(
   email: string,
   password: string
 ): string | null {
@@ -11,4 +16,22 @@
   }
 
   return null
+}
+
+export function getAuthenticatedUser(
+  session: {
+    user: {
+      id: string
+      email?: string
+    }
+  } | null
+): AuthenticatedUser | null {
+  if (!session) {
+    return null
+  }
+
+  return {
+    id: session.user.id,
+    email: session.user.email,
+  }
 }
