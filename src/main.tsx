@@ -1,5 +1,4 @@
-﻿import './env-test'
-import './index.css'
+﻿import './index.css'
 import App from './App.tsx'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
