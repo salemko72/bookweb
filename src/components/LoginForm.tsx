@@ -1,5 +1,4 @@
-﻿import { FormEvent, useState } from 'react'
-import { getLoginValidationError } from '../lib/auth'
+﻿import { type FormEvent, useState } from 'react'
 import { signInWithPassword } from '../lib/auth-supabase'
 
 type LoginFormProps = {
@@ -13,7 +12,7 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [authError, setAuthError] = useState<string | null>(null)
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const nextEmailError = !email.trim()
@@ -32,6 +31,10 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
       return
     }
 
+    void submitCredentials()
+  }
+
+  async function submitCredentials() {
     const { error } = await signInWithPassword(email, password)
 
     if (error) {

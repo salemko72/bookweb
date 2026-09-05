@@ -1,36 +1,72 @@
 ﻿import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabase'
+import { Route, Routes } from 'react-router-dom'
+import { LoginForm } from './components/LoginForm'
+import { AppShell } from './components/AppShell'
+import { CalendarPage } from './pages/CalendarPage'
+import { HomePage } from './pages/HomePage'
+import { NewBookingPage } from './pages/NewBookingPage'
+import { PropertiesPage } from './pages/PropertiesPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { getCurrentSession } from './lib/auth-supabase'
 
 function App() {
-  const [status, setStatus] = useState('Testing Supabase connection...')
+  const [checkingSession, setCheckingSession] = useState(true)
+  const [authenticated, setAuthenticated] = useState(false)
 
   useEffect(() => {
-    const testConnection = async () => {
-      const { error } = await supabase.auth.getSession()
+    let mounted = true
 
-      if (error) {
-        setStatus('Supabase error: ' + error.message)
-        return
-      }
+ getCurrentSession().then((session) => {
+  if (!mounted) return
+  setAuthenticated(Boolean(session))
+  setCheckingSession(false)
+})
 
-      setStatus('Supabase connection OK')
+    return () => {
+      mounted = false
     }
-
-    testConnection()
   }, [])
 
-  return (
-    <main className="min-h-screen bg-slate-100 p-10">
-      <div className="mx-auto max-w-3xl rounded-2xl bg-white p-10 shadow-sm">
-        <h1 className="text-4xl font-bold text-slate-900">
-          Booking Manager
-        </h1>
+  if (checkingSession) {
+    return (
+      <main className="min-h-screen bg-slate-100 flex items-center justify-center">
+        <p className="text-slate-500">Loading...</p>
+      </main>
+    )
+  }
 
-        <p className="mt-4 text-lg text-slate-600">
-          {status}
-        </p>
-      </div>
-    </main>
+  if (!authenticated) {
+    return (
+      <main className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-3xl bg-white p-8">
+          <div className="mb-8">
+            <p className="text-sm font-semibold uppercase tracking-widest text-violet-500">
+              Booking Manager
+            </p>
+            <h1 className="mt-3 text-4xl font-semibold text-slate-900">
+              Welcome back
+            </h1>
+            <p className="mt-2 text-slate-500">
+              Sign in to manage your properties.
+            </p>
+          </div>
+
+          <LoginForm onAuthenticated={() => setAuthenticated(true)} />
+        </div>
+      </main>
+    )
+  }
+
+  return (
+    <AppShell>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/properties" element={<PropertiesPage />} />
+        <Route path="/new-booking" element={<NewBookingPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+      </Routes>
+    </AppShell>
   )
 }
 

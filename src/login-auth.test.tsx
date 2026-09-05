@@ -1,16 +1,28 @@
-﻿import { describe, expect, it, vi } from 'vitest'
+﻿import { describe, expect, it, vi, afterEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { LoginForm } from './components/LoginForm'
 import * as authSupabase from './lib/auth-supabase'
+import type { AuthTokenResponsePassword, User, Session } from '@supabase/supabase-js'
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
+function successfulAuthResponse(): AuthTokenResponsePassword {
+  return {
+    data: {
+      user: {} as User,
+      session: {} as Session,
+    },
+    error: null,
+  }
+}
 
 describe('login form authentication', () => {
   it('calls Supabase login with the entered credentials', async () => {
     const signIn = vi
       .spyOn(authSupabase, 'signInWithPassword')
-      .mockResolvedValue({
-        data: { user: null, session: null },
-        error: null,
-      })
+      .mockResolvedValue(successfulAuthResponse())
 
     const onAuthenticated = vi.fn()
 
@@ -32,13 +44,18 @@ describe('login form authentication', () => {
         'secret123'
       )
     })
+
+    expect(onAuthenticated).toHaveBeenCalled()
   })
 
   it('shows a Supabase authentication error', async () => {
     vi
       .spyOn(authSupabase, 'signInWithPassword')
       .mockResolvedValue({
-        data: { user: null, session: null },
+        data: {
+          user: null,
+          session: null,
+        },
         error: {
           message: 'Invalid login credentials',
         } as never,

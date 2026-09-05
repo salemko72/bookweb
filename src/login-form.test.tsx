@@ -1,7 +1,8 @@
 ﻿import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { LoginForm } from './components/LoginForm'
 import * as authSupabase from './lib/auth-supabase'
+import type { User, Session } from '@supabase/supabase-js'
 
 describe('login form', () => {
   it('shows required field errors when submitted empty', () => {
@@ -15,7 +16,10 @@ describe('login form', () => {
 
   it('authenticates when valid credentials are provided', async () => {
     vi.spyOn(authSupabase, 'signInWithPassword').mockResolvedValue({
-      data: { user: null, session: null },
+      data: {
+        user: {} as User,
+        session: {} as Session,
+      },
       error: null,
     })
 
@@ -33,9 +37,8 @@ describe('login form', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
 
-    expect(await screen.findByRole('button', { name: /sign in/i }))
-      .toBeInTheDocument()
-
-    expect(onAuthenticated).toHaveBeenCalled()
+    await waitFor(() => {
+      expect(onAuthenticated).toHaveBeenCalled()
+    })
   })
 })
