@@ -1,10 +1,11 @@
 ﻿import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { LoginForm } from './components/LoginForm'
+import * as authSupabase from './lib/auth-supabase'
 
 describe('login form', () => {
   it('shows required field errors when submitted empty', () => {
-    render(<LoginForm onSubmit={vi.fn()} />)
+    render(<LoginForm onAuthenticated={vi.fn()} />)
 
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
 
@@ -12,10 +13,15 @@ describe('login form', () => {
     expect(screen.getByText('Password is required.')).toBeInTheDocument()
   })
 
-  it('submits email and password when both are provided', () => {
-    const onSubmit = vi.fn()
+  it('authenticates when valid credentials are provided', async () => {
+    vi.spyOn(authSupabase, 'signInWithPassword').mockResolvedValue({
+      data: { user: null, session: null },
+      error: null,
+    })
 
-    render(<LoginForm onSubmit={onSubmit} />)
+    const onAuthenticated = vi.fn()
+
+    render(<LoginForm onAuthenticated={onAuthenticated} />)
 
     fireEvent.change(screen.getByLabelText(/email/i), {
       target: { value: 'kate@example.com' },
@@ -27,6 +33,9 @@ describe('login form', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }))
 
-    expect(onSubmit).toHaveBeenCalledWith('kate@example.com', 'secret123')
+    expect(await screen.findByRole('button', { name: /sign in/i }))
+      .toBeInTheDocument()
+
+    expect(onAuthenticated).toHaveBeenCalled()
   })
 })

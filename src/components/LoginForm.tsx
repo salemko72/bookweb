@@ -1,17 +1,19 @@
 ﻿import { FormEvent, useState } from 'react'
 import { getLoginValidationError } from '../lib/auth'
+import { signInWithPassword } from '../lib/auth-supabase'
 
 type LoginFormProps = {
-  onSubmit: (email: string, password: string) => void
+  onAuthenticated: () => void
 }
 
-export function LoginForm({ onSubmit }: LoginFormProps) {
+export function LoginForm({ onAuthenticated }: LoginFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [emailError, setEmailError] = useState<string | null>(null)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     const nextEmailError = !email.trim()
@@ -24,15 +26,20 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
     setEmailError(nextEmailError)
     setPasswordError(nextPasswordError)
+    setAuthError(null)
 
     if (nextEmailError || nextPasswordError) {
       return
     }
 
-    setEmailError(getLoginValidationError(email, password))
-    setPasswordError(null)
+    const { error } = await signInWithPassword(email, password)
 
-    onSubmit(email, password)
+    if (error) {
+      setAuthError(error.message)
+      return
+    }
+
+    onAuthenticated()
   }
 
   return (
@@ -56,6 +63,8 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
       />
 
       {passwordError && <p>{passwordError}</p>}
+
+      {authError && <p>{authError}</p>}
 
       <button type="submit">Sign in</button>
     </form>
