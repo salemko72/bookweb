@@ -1,4 +1,4 @@
-﻿import { supabase } from './supabase'
+import { supabase } from './supabase'
 
 export async function signInWithPassword(email: string, password: string) {
   return supabase.auth.signInWithPassword({
@@ -25,4 +25,8 @@ export async function requestPasswordReset(email: string) {
   return supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${window.location.origin}/reset-password`,
   })
+}
+
+export async function updatePassword(password: string) {
+  return supabase.auth.updateUser({ password })
 }

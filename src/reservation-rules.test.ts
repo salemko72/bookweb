@@ -1,10 +1,8 @@
-﻿import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { hasReservationConflict } from './lib/reservation-rules'
 
 describe('reservation conflict rules', () => {
   it('detects overlapping reservations on the same property', async () => {
-    const { hasReservationConflict } =
-      await import('./lib/reservation-rules')
-
     const existing = [
       {
         property_id: 'p1',
@@ -25,9 +23,6 @@ describe('reservation conflict rules', () => {
   })
 
   it('allows a reservation starting exactly at the previous checkout', async () => {
-    const { hasReservationConflict } =
-      await import('./lib/reservation-rules')
-
     const existing = [
       {
         property_id: 'p1',
@@ -48,9 +43,6 @@ describe('reservation conflict rules', () => {
   })
 
   it('ignores cancelled reservations', async () => {
-    const { hasReservationConflict } =
-      await import('./lib/reservation-rules')
-
     const existing = [
       {
         property_id: 'p1',

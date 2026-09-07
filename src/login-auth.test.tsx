@@ -1,4 +1,4 @@
-﻿import { describe, expect, it, vi, afterEach } from 'vitest'
+import { describe, expect, it, vi, afterEach } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { LoginForm } from './components/LoginForm'
 import * as authSupabase from './lib/auth-supabase'
@@ -32,7 +32,7 @@ describe('login form authentication', () => {
       target: { value: 'kate@example.com' },
     })
 
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: 'secret123' },
     })
 
@@ -67,7 +67,7 @@ describe('login form authentication', () => {
       target: { value: 'kate@example.com' },
     })
 
-    fireEvent.change(screen.getByLabelText(/password/i), {
+    fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: 'wrong-password' },
     })
 

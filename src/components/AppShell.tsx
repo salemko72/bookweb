@@ -1,52 +1,25 @@
-﻿import { NavLink } from 'react-router-dom'
-import {
-  CalendarDays,
-  Grid2X2,
-  Plus,
-  Settings,
-} from 'lucide-react'
+import { NavLink } from 'react-router-dom'
+import { CalendarDays, Grid2X2, Home, Plus, Settings } from 'lucide-react'
+import { useT } from '../lib/i18n'
 
-type AppShellProps = {
-  children: React.ReactNode
-}
-
-const navItems = [
-  { to: '/calendar', label: 'Calendar', icon: CalendarDays },
-  { to: '/properties', label: 'Properties', icon: Grid2X2 },
-  { to: '/new-booking', label: 'New Booking', icon: Plus, primary: true },
-  { to: '/settings', label: 'Settings', icon: Settings },
-]
+type AppShellProps = { children: React.ReactNode }
 
 export function AppShell({ children }: AppShellProps) {
-  return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-      <main className="pb-24">
-        {children}
-      </main>
+  const t = useT()
+  const navItems = [
+    { to: '/', label: t('home'), icon: Home },
+    { to: '/calendar', label: t('calendar'), icon: CalendarDays },
+    { to: '/properties', label: t('properties'), icon: Grid2X2 },
+    { to: '/new-booking', label: t('newBooking'), icon: Plus, primary: true },
+    { to: '/settings', label: t('settings'), icon: Settings },
+  ]
 
-      <nav className="fixed bottom-0 left-0 right-0 border-t border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-around px-3 py-3">
-          {navItems.map(({ to, label, icon: Icon, primary }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                [
-                  'flex min-w-20 flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs font-medium transition',
-                  primary
-                    ? 'bg-violet-600 text-white'
-                    : isActive
-                      ? 'bg-violet-100 text-violet-700'
-                      : 'text-slate-500 hover:bg-slate-100',
-                ].join(' ')
-              }
-            >
-              <Icon size={20} strokeWidth={1.8} />
-              <span>{label}</span>
-            </NavLink>
-          ))}
-        </div>
-      </nav>
-    </div>
-  )
+  return <div className="min-h-screen bg-[#f6f1e9] text-slate-900">
+    <main className="pb-20">{children}</main>
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#ddd6ca]/80 bg-[#fffdfa]/95 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-1 px-2 py-1.5 sm:justify-around sm:px-3">
+        {navItems.map(({ to, label, icon: Icon, primary }) => <NavLink key={to} to={to} end={to === '/'} title={label} className={({ isActive }) => ['flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl border px-1.5 py-1.5 text-[10px] font-semibold transition sm:max-w-28 sm:px-3 sm:py-2 sm:text-[11px]', primary ? 'border-violet-700 bg-violet-600 text-white' : isActive ? 'border-violet-200 bg-violet-100 text-violet-700' : 'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white'].join(' ')}><Icon size={18} strokeWidth={1.8}/><span className="truncate">{label}</span></NavLink>)}
+      </div>
+    </nav>
+  </div>
 }

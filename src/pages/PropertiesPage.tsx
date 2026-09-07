@@ -1,131 +1,138 @@
-﻿import { useEffect, useState } from 'react'
-import { getProperties, type Property } from '../lib/properties-repository'
+import { useEffect, useState } from 'react'
+import { Building2, Check, ImagePlus, Link2, MapPin, Palette, Pencil, Plus, Ruler, Save, Trash2, UsersRound, Wifi, Wind, X } from 'lucide-react'
+import { AddressAutocomplete } from '../components/AddressAutocomplete'
+import { PropertyTimeline } from '../components/PropertyTimeline'
+import { createProperty, deactivateProperty, getAllProperties, updateProperty, type Property } from '../lib/properties-repository'
+import { propertyToFormValues, validateProperty, type PropertyFormValues } from '../lib/property-admin'
+import { readImageFile } from '../lib/property-image'
+import { getReservations, type Reservation } from '../lib/reservations-repository'
+import { createExternalCalendar, deleteExternalCalendar, getExternalCalendars, updateExternalCalendar, type ExternalCalendarRecord } from '../lib/ical-repository'
+import { useT } from '../lib/i18n'
+
+const fallbackImages: Record<string, string> = {
+  Priko: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=900&h=700&fit=crop',
+  Nelly: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=900&h=700&fit=crop',
+  Pjaca: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=900&h=700&fit=crop',
+}
+const emptyForm: PropertyFormValues = { name: '', address: '', city: '', color: '#7C5CFC', latitude: null, longitude: null, capacity: 1, rooms: 1, area_m2: null, image_url: null, notes: '', check_in_time: '14:00', check_out_time: '10:00', parking: false, wifi: true, keybox: false, air_conditioning: true, cleaning_duration_minutes: 120, is_active: true }
+const featureItems = [['wifi','Wi-Fi',Wifi],['air_conditioning','AC',Wind],['parking','Parking',Building2],['keybox','Keybox',Check]] as const
+const linkSourceOptions = [['airbnb_ical', 'Airbnb'], ['booking_ical', 'Booking.com'], ['other_ical', 'Other']] as const
+type CalendarLinkDraft = { source: ExternalCalendarRecord['source']; feed_url: string }
+
+function mapEmbedUrl(latitude: number, longitude: number) { const d = 0.004; return `https://www.openstreetmap.org/export/embed.html?bbox=${longitude-d}%2C${latitude-d}%2C${longitude+d}%2C${latitude+d}&layer=mapnik&marker=${latitude}%2C${longitude}` }
+function sourceName(source: ExternalCalendarRecord['source']) { return source === 'airbnb_ical' ? 'Airbnb' : source === 'booking_ical' ? 'Booking.com' : 'Other' }
 
 export function PropertiesPage() {
-  const [properties, setProperties] = useState<Property[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const t = useT()
+  const [properties,setProperties]=useState<Property[]>([])
+  const [form,setForm]=useState<PropertyFormValues>(emptyForm)
+  const [editingId,setEditingId]=useState<string|null>(null)
+  const [editorOpen,setEditorOpen]=useState(false)
+  const [loading,setLoading]=useState(true)
+  const [saving,setSaving]=useState(false)
+  const [message,setMessage]=useState<string|null>(null)
+  const [error,setError]=useState<string|null>(null)
+  const [imageBusy,setImageBusy]=useState(false)
+  const [propertyReservations,setPropertyReservations]=useState<Reservation[]>([])
+  const [calendarLinks,setCalendarLinks]=useState<ExternalCalendarRecord[]>([])
+  const [draftLinks,setDraftLinks]=useState<CalendarLinkDraft[]>([])
+  const [linksLoading,setLinksLoading]=useState(false)
+  const [linksOpen,setLinksOpen]=useState(true)
+  const [newLinkSource,setNewLinkSource]=useState<ExternalCalendarRecord['source']>('airbnb_ical')
+  const [newLinkUrl,setNewLinkUrl]=useState('')
+  const [linkSavingId,setLinkSavingId]=useState<string|null>(null)
 
-  useEffect(() => {
-    let mounted = true
+  async function load(){setLoading(true);try{setProperties(await getAllProperties());setError(null)}catch{setError('Unable to load properties.')}finally{setLoading(false)}}
+  useEffect(()=>{void load()},[])
 
-    async function loadProperties() {
-      try {
-        const data = await getProperties()
+  async function loadLinks(propertyId: string){setLinksLoading(true);try{setCalendarLinks(await getExternalCalendars(propertyId))}catch{setCalendarLinks([]);setError('Unable to load calendar links.')}finally{setLinksLoading(false)}}
 
-        if (!mounted) return
+  function startCreate(){setEditingId(null);setEditorOpen(true);setForm({...emptyForm});setPropertyReservations([]);setCalendarLinks([]);setDraftLinks([]);setLinksOpen(true);setNewLinkUrl('');setMessage(null);setError(null)}
+  async function startEdit(property:Property){setEditingId(property.id);setEditorOpen(true);setForm(propertyToFormValues(property));setDraftLinks([]);setMessage(null);setError(null);setLinksOpen(false);setNewLinkUrl('');void loadLinks(property.id);try{setPropertyReservations(await getReservations('2000-01-01T00:00:00','2100-01-01T00:00:00'))}catch{setPropertyReservations([])}}
+  function closeEditor(){setEditorOpen(false);setEditingId(null);setForm({...emptyForm});setCalendarLinks([]);setDraftLinks([]);setLinksOpen(true);setNewLinkUrl('')}
+  function set<K extends keyof PropertyFormValues>(key:K,value:PropertyFormValues[K]){setForm(current=>({...current,[key]:value}))}
+  async function handleImageChange(file?:File){if(!file)return;setImageBusy(true);setError(null);try{set('image_url',await readImageFile(file))}catch(err){setError(err instanceof Error?err.message:'Unable to read image.')}finally{setImageBusy(false)}}
 
-        setProperties(data)
-        setError(null)
-      } catch (err) {
-        if (!mounted) return
+  function addDraftCalendarLink(){if(!newLinkUrl.trim())return;setDraftLinks(current=>[...current,{source:newLinkSource,feed_url:newLinkUrl.trim()}]);setNewLinkUrl('')}
+  function removeDraftCalendarLink(index:number){setDraftLinks(current=>current.filter((_,itemIndex)=>itemIndex!==index))}
 
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Unable to load properties',
-        )
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
+  async function save(){
+    const validationError=validateProperty(form);if(validationError){setError(validationError);return}
+    setSaving(true);setError(null);setMessage(null)
+    try{
+      if(editingId){await updateProperty(editingId,form);setCalendarLinks(calendarLinks);await load();closeEditor();setMessage('Property updated.')}
+      else{
+        const created=await createProperty(form)
+        for(const link of draftLinks){await createExternalCalendar({property_id:created.id,source:link.source,feed_url:link.feed_url,is_active:true,last_synced_at:null,sync_status:'idle'})}
+        await load();closeEditor();setMessage('Property created.')
       }
-    }
-
-    void loadProperties()
-
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  if (loading) {
-    return (
-      <section className="mx-auto max-w-6xl p-6 md:p-10">
-        <p className="text-sm text-slate-500">Loading properties...</p>
-      </section>
-    )
+    }catch{setError('Unable to save property. The property may have been saved; please check the list and edit it if needed.')}finally{setSaving(false)}
   }
 
-  if (error) {
-    return (
-      <section className="mx-auto max-w-6xl p-6 md:p-10">
-        <p className="text-sm text-red-600">{error}</p>
-      </section>
-    )
-  }
+  async function deactivate(){if(!editingId)return;setSaving(true);setError(null);try{await deactivateProperty(editingId);closeEditor();setMessage('Property deactivated.');await load()}catch{setError('Unable to deactivate property.')}finally{setSaving(false)}}
+  async function addCalendarLink(){if(!editingId||!newLinkUrl.trim())return;setLinkSavingId('new');setError(null);try{const created=await createExternalCalendar({property_id:editingId,source:newLinkSource,feed_url:newLinkUrl.trim(),is_active:true,last_synced_at:null,sync_status:'idle'});setCalendarLinks(current=>[...current,created]);setNewLinkUrl('');setMessage('Calendar link added.')}catch{setError('Unable to add calendar link.')}finally{setLinkSavingId(null)}}
+  async function saveCalendarLink(link:ExternalCalendarRecord){setLinkSavingId(link.id);setError(null);try{const updated=await updateExternalCalendar(link.id,{source:link.source,feed_url:link.feed_url,is_active:link.is_active});setCalendarLinks(current=>current.map(item=>item.id===updated.id?updated:item));setMessage('Calendar link updated.')}catch{setError('Unable to update calendar link.')}finally{setLinkSavingId(null)}}
+  async function removeCalendarLink(id:string){setLinkSavingId(id);setError(null);try{await deleteExternalCalendar(id);setCalendarLinks(current=>current.filter(item=>item.id!==id));setMessage('Calendar link removed.')}catch{setError('Unable to remove calendar link.')}finally{setLinkSavingId(null)}}
 
-  if (properties.length === 0) {
-    return (
-      <section className="mx-auto max-w-6xl p-6 md:p-10">
-        <header>
-          <p className="text-sm text-slate-500">Your portfolio</p>
-          <h1 className="mt-2 text-4xl font-semibold tracking-tight">
-            Properties
-          </h1>
-        </header>
-
-        <div className="mt-8 rounded-3xl bg-white p-8">
-          <p className="text-lg font-medium text-slate-800">
-            No properties yet
-          </p>
-          <p className="mt-2 text-slate-500">
-            Add a property to start managing your portfolio.
-          </p>
-        </div>
-      </section>
-    )
-  }
-
-  return (
-    <section className="mx-auto max-w-6xl p-6 md:p-10">
-      <header>
-        <p className="text-sm text-slate-500">Your portfolio</p>
-        <h1 className="mt-2 text-4xl font-semibold tracking-tight">
-          Properties
-        </h1>
-      </header>
-
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
-        {properties.map((property) => (
-          <article
-            key={property.id}
-            className="rounded-3xl bg-white p-6"
-          >
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-violet-100 text-xl font-semibold text-violet-700">
-              {property.name.charAt(0).toUpperCase()}
-            </div>
-
-            <h2 className="mt-5 text-2xl font-semibold">
-              {property.name}
-            </h2>
-
-            <p className="mt-2 text-slate-500">
-              {property.area_m2 != null ? `${property.area_m2} m²` : '—'}
-              {' · capacity '}
-              {property.capacity}
-            </p>
-
-            <div className="mt-5 flex flex-wrap gap-2 text-xs text-slate-500">
-              <span className="rounded-full bg-slate-100 px-3 py-1">
-                {property.rooms} rooms
-              </span>
-
-              {property.wifi && (
-                <span className="rounded-full bg-slate-100 px-3 py-1">
-                  Wi-Fi
-                </span>
-              )}
-
-              {property.air_conditioning && (
-                <span className="rounded-full bg-slate-100 px-3 py-1">
-                  AC
-                </span>
-              )}
-            </div>
+  return <section className="mx-auto max-w-6xl p-3 pb-8 md:p-5">
+    <header className="mb-5 flex items-end justify-between gap-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">{t('portfolio')}</p><h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">{t('properties')}</h1><p className="mt-1 text-xs text-slate-500">{t('homesDetailsAvailability')}</p></div><button type="button" onClick={startCreate} className="flex shrink-0 items-center gap-2 rounded-xl bg-violet-600 px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-violet-700"><Plus size={16}/><span className="hidden sm:inline">{t('newProperty')}</span></button></header>
+    {error&&<div role="alert" className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-700">{error}</div>}{message&&<div role="status" className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs text-emerald-700">{message}</div>}
+    <div className={editorOpen ? 'grid gap-4 lg:grid-cols-[1fr_430px]' : 'block'}>
+      <div data-testid="properties-grid" className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        {loading?<p className="col-span-2 text-xs text-slate-500 md:col-span-3">Loading properties...</p>:properties.length===0?<div className="col-span-2 rounded-[1.35rem] bg-white p-7 text-center md:col-span-3"><p className="text-base font-semibold">No properties yet</p><p className="mt-1 text-xs text-slate-500">Create your first property to start managing availability.</p></div>:properties.map(property=>{
+          const image=property.image_url||fallbackImages[property.name]
+          return <article key={property.id} data-testid="property-card" className="relative aspect-square overflow-hidden rounded-[1.5rem] border border-[#e5ded3] bg-white shadow-[0_8px_24px_rgba(76,62,45,0.04)]">
+            <button type="button" onClick={()=>void startEdit(property)} aria-label={`Edit ${property.name}`} className="flex h-full w-full flex-col text-left transition hover:bg-[#fffdfa]"><div className="relative min-h-0 flex-1 bg-slate-100">{image?<img src={image} alt="" className="h-full w-full object-cover"/>:<div className="flex h-full items-center justify-center text-violet-500"><Building2 size={32}/></div>}<span className="absolute left-2.5 top-2.5 h-2 w-8 rounded-full" style={{backgroundColor:property.color||'#7C5CFC'}}/><span className="absolute right-2.5 top-2.5 rounded-full bg-white/90 px-1.5 py-1 text-[9px] font-semibold text-slate-600">{property.is_active?t('active'):t('inactive')}</span></div><div className="p-3"><div className="flex items-start gap-2"><div className="min-w-0 flex-1"><h2 className="truncate text-sm font-semibold">{property.name}</h2><p className="mt-0.5 flex items-center gap-1 truncate text-[10px] text-slate-500"><MapPin size={10}/>{property.city||property.address||'No address'}</p></div><Pencil size={14} className="shrink-0 text-slate-300"/></div><div className="mt-2 flex gap-1.5 text-[10px] text-slate-500"><span aria-label={`${property.capacity} guests`} className="flex items-center gap-1 rounded-lg bg-slate-50 px-1.5 py-1"><UsersRound size={10}/>{property.capacity}</span><span className="flex items-center gap-1 rounded-lg bg-slate-50 px-1.5 py-1"><Ruler size={10}/>{property.area_m2??'—'} m²</span>{property.air_conditioning&&<span className="flex items-center gap-1 rounded-lg bg-slate-50 px-1.5 py-1"><Wind size={10}/>AC</span>}</div></div></button>
           </article>
-        ))}
+        })}
       </div>
-    </section>
-  )
+
+      {editorOpen&&<section className="rounded-[1.35rem] border border-[#e5ded3] bg-white p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-500">{editingId?t('editProperty'):t('newProperty')}</p><h2 className="mt-1 text-lg font-semibold tracking-tight">{editingId?form.name||'Property':t('propertyDetails')}</h2></div><button type="button" onClick={closeEditor} aria-label="Close property editor" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"><X size={16}/></button></div>
+        <label className="mt-3 block cursor-pointer rounded-xl border border-dashed border-slate-300 bg-slate-50 p-1.5"><input type="file" accept="image/*" className="sr-only" onChange={e=>void handleImageChange(e.target.files?.[0])}/>{form.image_url?<div className="relative h-36 overflow-hidden rounded-lg"><img src={form.image_url} alt="Property preview" className="h-full w-full object-cover"/><span className="absolute bottom-2 left-2 rounded-md bg-black/55 px-2 py-1 text-[10px] font-semibold text-white">{t('changeImage')}</span></div>:<div className="flex h-36 flex-col items-center justify-center rounded-lg bg-white text-center"><ImagePlus size={22} className="text-violet-500"/><p className="mt-1.5 text-xs font-semibold">{t('addPropertyImage')}</p><p className="mt-0.5 text-[10px] text-slate-500">{t('imageHint')}</p></div>}</label>
+        {form.image_url&&<button type="button" onClick={()=>set('image_url',null)} className="mt-1.5 text-[10px] font-semibold text-slate-500 hover:text-rose-600">{t('removeImage')}</button>}
+        <div className="mt-3 grid gap-3 md:grid-cols-2"><label className="text-[11px] font-semibold text-slate-600 md:col-span-2">{t('name')}<input aria-label="Name" value={form.name} onChange={e=>set('name',e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal outline-none focus:border-violet-400"/></label><div className="md:col-span-2"><AddressAutocomplete value={{address:form.address,city:form.city,latitude:form.latitude,longitude:form.longitude}} onChange={v=>{set('address',v.address);set('city',v.city);set('latitude',v.latitude);set('longitude',v.longitude)}}/></div><label className="text-[11px] font-semibold text-slate-600">{t('city')}<input aria-label={t('city')} value={form.city} onChange={e=>set('city',e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('guests')}<input type="number" min={1} value={form.capacity} onChange={e=>set('capacity',Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('rooms')}<input type="number" min={1} value={form.rooms} onChange={e=>set('rooms',Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('area')} (m²)<input type="number" min={0} value={form.area_m2??''} onChange={e=>set('area_m2',e.target.value?Number(e.target.value):null)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('cleaning')} (min)<input type="number" min={0} value={form.cleaning_duration_minutes} onChange={e=>set('cleaning_duration_minutes',Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('checkIn')}<input type="time" value={form.check_in_time} onChange={e=>set('check_in_time',e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('checkOut')}<input type="time" value={form.check_out_time} onChange={e=>set('check_out_time',e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label></div>
+        <label className="mt-3 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-[11px] font-semibold text-slate-600"><Palette size={14} className="text-slate-400"/>{t('color')}<input aria-label={t('color')} type="color" value={form.color} onChange={e=>set('color',e.target.value)} className="ml-auto h-8 w-12 cursor-pointer rounded-lg border-0 bg-transparent p-0"/></label>
+        <div className="mt-2 grid grid-cols-2 gap-1.5">{featureItems.map(([key,label,Icon])=><label key={key} className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-[10px] font-semibold text-slate-600"><input type="checkbox" checked={Boolean(form[key])} onChange={e=>set(key,e.target.checked as PropertyFormValues[typeof key])} className="h-3.5 w-3.5 accent-violet-600"/><Icon size={13} className="text-slate-400"/>{label}</label>)}</div>
+        <label className="mt-2 block text-[11px] font-semibold text-slate-600">{t('notes')}<textarea rows={3} value={form.notes} onChange={e=>set('notes',e.target.value)} className="mt-1 w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label>
+
+        <section className="mt-3 rounded-2xl border border-[#e5ded3] bg-[#fffdfa] p-3">
+          <button type="button" onClick={()=>setLinksOpen(current=>!current)} className="flex w-full items-center justify-between text-left">
+            <span className="flex items-center gap-2 text-xs font-semibold text-slate-800"><Link2 size={15} className="text-violet-500"/>Calendar links<span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] text-slate-500">{editingId?calendarLinks.length:draftLinks.length}</span></span>
+            <span className="text-[10px] font-semibold text-violet-600">{linksOpen?'Hide':'Open'}</span>
+          </button>
+          {linksOpen && <div className="mt-3 space-y-2">
+            {editingId ? (
+              linksLoading ? <p className="text-[10px] text-slate-500">Loading links…</p> : calendarLinks.map(link => (
+                <div key={link.id} className="rounded-xl border border-slate-200 bg-white p-2.5">
+                  <div className="grid gap-2 sm:grid-cols-[115px_1fr_auto]">
+                    <select aria-label={`Source for ${link.id}`} value={link.source} onChange={e=>setCalendarLinks(current=>current.map(item=>item.id===link.id?{...item,source:e.target.value as ExternalCalendarRecord['source']}:item))} className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px]">{linkSourceOptions.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
+                    <input aria-label={`URL for ${link.id}`} type="url" value={link.feed_url} onChange={e=>setCalendarLinks(current=>current.map(item=>item.id===link.id?{...item,feed_url:e.target.value}:item))} className="min-w-0 rounded-lg border border-slate-200 px-2.5 py-2 text-[10px]"/>
+                    <div className="flex gap-1.5"><button type="button" aria-label={`Save ${sourceName(link.source)} link`} disabled={linkSavingId===link.id} onClick={()=>void saveCalendarLink(link)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-600 text-white"><Save size={13}/></button><button type="button" aria-label={`Delete ${sourceName(link.source)} link`} disabled={linkSavingId===link.id} onClick={()=>void removeCalendarLink(link.id)} className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={13}/></button></div>
+                  </div>
+                </div>
+              ))
+            ) : draftLinks.map((link,index) => (
+              <div key={`${link.source}-${index}`} className="grid gap-2 rounded-xl border border-slate-200 bg-white p-2.5 sm:grid-cols-[115px_1fr_auto]">
+                <select aria-label={`Draft source ${index+1}`} value={link.source} onChange={e=>setDraftLinks(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,source:e.target.value as ExternalCalendarRecord['source']}:item))} className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px]">{linkSourceOptions.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
+                <input aria-label={`Draft URL ${index+1}`} type="url" value={link.feed_url} onChange={e=>setDraftLinks(current=>current.map((item,itemIndex)=>itemIndex===index?{...item,feed_url:e.target.value}:item))} className="min-w-0 rounded-lg border border-slate-200 px-2.5 py-2 text-[10px]"/>
+                <button type="button" aria-label={`Remove draft link ${index+1}`} onClick={()=>removeDraftCalendarLink(index)} className="flex h-8 items-center justify-center rounded-lg bg-slate-100 px-3 text-[10px] font-semibold text-slate-500 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={13}/></button>
+              </div>
+            ))}
+            <div className="rounded-xl border border-dashed border-slate-300 bg-white p-2.5">
+              <p className="text-[10px] font-semibold text-slate-700">Add calendar link</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-[115px_1fr_auto]">
+                <select aria-label="New calendar source" value={newLinkSource} onChange={e=>setNewLinkSource(e.target.value as ExternalCalendarRecord['source'])} className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px]">{linkSourceOptions.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select>
+                <input aria-label="New calendar link" type="url" placeholder="https://…/calendar.ics" value={newLinkUrl} onChange={e=>setNewLinkUrl(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();editingId?void addCalendarLink():addDraftCalendarLink()}}} className="min-w-0 rounded-lg border border-slate-200 px-2.5 py-2 text-[10px]"/>
+                <button type="button" aria-label="Add calendar link" disabled={!newLinkUrl.trim()||linkSavingId==='new'} onClick={()=>editingId?void addCalendarLink():addDraftCalendarLink()} className="flex h-8 items-center justify-center gap-1 rounded-lg bg-violet-600 px-3 text-[10px] font-semibold text-white disabled:opacity-50"><Plus size={12}/>Add</button>
+              </div>
+            </div>
+          </div>}
+        </section>
+
+        {form.latitude!=null&&form.longitude!=null&&<div className="mt-3 overflow-hidden rounded-xl border border-slate-200"><div className="flex items-center gap-1.5 border-b border-slate-100 px-3 py-2 text-[10px] font-semibold text-slate-600"><MapPin size={13} className="text-violet-500"/>{t('mapPreview')}</div><iframe title={t('mapPreview')} src={mapEmbedUrl(form.latitude,form.longitude)} className="h-36 w-full border-0" loading="lazy"/></div>}
+        <div className="mt-3 flex gap-2"><button type="button" disabled={saving||imageBusy} onClick={()=>void save()} className="flex-1 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50">{saving?'Saving…':editingId?t('saveChanges'):t('createProperty')}</button>{editingId&&<button type="button" disabled={saving} onClick={()=>void deactivate()} className="rounded-xl bg-slate-100 px-3 py-2.5 text-[10px] font-semibold text-slate-600 hover:bg-rose-50 hover:text-rose-600">{t('deactivate')}</button>}</div>
+        {editingId&&<PropertyTimeline property={properties.find(p=>p.id===editingId)!} reservations={propertyReservations}/>} 
+      </section>}
+    </div>
+  </section>
 }

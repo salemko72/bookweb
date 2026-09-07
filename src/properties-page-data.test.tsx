@@ -1,10 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
-const getPropertiesMock = vi.hoisted(() => vi.fn())
+const getAllPropertiesMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./lib/properties-repository', () => ({
-  getProperties: getPropertiesMock,
+  getAllProperties: getAllPropertiesMock,
 }))
 
 import { PropertiesPage } from './pages/PropertiesPage'
@@ -40,7 +40,7 @@ const properties = [
 
 describe('PropertiesPage data loading', () => {
   it('loads and displays properties from the repository', async () => {
-    getPropertiesMock.mockResolvedValue(properties)
+    getAllPropertiesMock.mockResolvedValue(properties)
 
     render(<PropertiesPage />)
 
@@ -51,21 +51,21 @@ describe('PropertiesPage data loading', () => {
       expect(screen.getByText('Nelly')).toBeInTheDocument()
     })
 
-    expect(getPropertiesMock).toHaveBeenCalledTimes(1)
+    expect(getAllPropertiesMock).toHaveBeenCalledTimes(1)
   })
 
   it('shows a repository error', async () => {
-    getPropertiesMock.mockRejectedValue(new Error('Database unavailable'))
+    getAllPropertiesMock.mockRejectedValue(new Error('Database unavailable'))
 
     render(<PropertiesPage />)
 
     await waitFor(() => {
-      expect(screen.getByText('Database unavailable')).toBeInTheDocument()
+      expect(screen.getByText('Unable to load properties.')).toBeInTheDocument()
     })
   })
 
   it('shows an empty state when there are no properties', async () => {
-    getPropertiesMock.mockResolvedValue([])
+    getAllPropertiesMock.mockResolvedValue([])
 
     render(<PropertiesPage />)
 
