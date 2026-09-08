@@ -1,8 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { DatePicker, buildMonthCells } from './DatePicker'
+import { saveSettings } from '../lib/settings'
 
 describe('DatePicker', () => {
+  beforeEach(() => localStorage.clear())
   it('opens a month grid with Monday-first weeks and European date display', () => {
     render(<DatePicker label="Check-in" value="2026-09-10" onChange={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: 'Check-in' }))
@@ -23,5 +25,11 @@ describe('DatePicker', () => {
   it('builds a complete six-week month grid', () => {
     const cells = buildMonthCells(new Date(2026, 8, 1, 12))
     expect(cells).toHaveLength(42)
+  })
+
+  it('uses the American display format when selected in settings', () => {
+    saveSettings({appearance:'light',measurementUnits:'imperial',dateFormat:'MM/DD/YYYY',language:'en'})
+    render(<DatePicker label="Check-in" value="2026-09-10" onChange={vi.fn()} />)
+    expect(screen.getByText('09/10/2026')).toBeInTheDocument()
   })
 })

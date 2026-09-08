@@ -18,8 +18,8 @@ describe('settings', () => {
   })
 
   it('persists appearance and measurement preferences', () => {
-    saveSettings({ appearance: 'dark', measurementUnits: 'imperial', dateFormat: 'DD.MM.YYYY', language: 'hr' })
-    expect(getSettings()).toEqual({ appearance: 'dark', measurementUnits: 'imperial', dateFormat: 'DD.MM.YYYY', language: 'hr' })
+    saveSettings({ appearance: 'dark', measurementUnits: 'imperial', dateFormat: 'MM/DD/YYYY', language: 'hr' })
+    expect(getSettings()).toEqual({ appearance: 'dark', measurementUnits: 'imperial', dateFormat: 'MM/DD/YYYY', language: 'hr' })
   })
 
   it('applies dark mode only when explicitly selected', () => {

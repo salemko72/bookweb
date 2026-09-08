@@ -16,4 +16,9 @@ describe('date formatting', () => {
     expect(parseEUDate('06.09.2026')).toBe('2026-09-06')
     expect(parseEUDate('31.02.2026')).toBeNull()
   })
+  it('supports the American date format from settings', () => {
+    expect(formatDate('2026-09-06T12:00:00', 'MM/DD/YYYY')).toBe('09/06/2026')
+    expect(formatDateShort('2026-09-06T12:00:00', 'MM/DD/YYYY')).toBe('09/06')
+    expect(formatDateInput('2026-09-06', 'MM/DD/YYYY')).toBe('09/06/2026')
+  })
 })

@@ -1,6 +1,6 @@
 export type Appearance = 'light' | 'dark' | 'system'
 export type MeasurementUnits = 'metric' | 'imperial'
-export type DateFormat = 'DD.MM.YYYY'
+export type DateFormat = 'DD.MM.YYYY' | 'MM/DD/YYYY'
 export type AppLanguage = 'en' | 'hr'
 export type NotificationSettings = { arrivals: boolean; departures: boolean; cleanings: boolean; newReservations: boolean }
 export type CalendarSourceSettings = { airbnbIcalUrl: string; bookingIcalUrl: string }

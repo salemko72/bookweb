@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findBookingConflict, validateBookingForm, type BookingFormValues } from './lib/reservation-form'
+import { findBookingConflict, isBookingDateUnavailable, validateBookingForm, type BookingFormValues } from './lib/reservation-form'
 import type { Property } from './lib/properties-repository'
 import type { Reservation } from './lib/reservations-repository'
 
@@ -18,5 +18,12 @@ describe('new booking validation', () => {
   it('allows back-to-back stays', () => {
     const existing: Reservation[] = [{ id: 'r1', property_id: 'p1', source: 'direct', guest_name: 'Existing', check_in: '2026-09-05T14:00:00.000Z', check_out: '2026-09-10T10:00:00.000Z', guests: 2, status: 'confirmed' }]
     expect(findBookingConflict(existing, base)).toBe(false)
+  })
+  it('checks selected arrival and departure dates immediately with back-to-back boundaries', () => {
+    const existing: Reservation[] = [{ id: 'r1', property_id: 'p1', source: 'direct', guest_name: 'Existing', check_in: '2026-09-12T14:00:00.000Z', check_out: '2026-09-18T10:00:00.000Z', guests: 2, status: 'confirmed' }]
+    expect(isBookingDateUnavailable(existing, 'p1', '2026-09-14', 'checkIn')).toBe(true)
+    expect(isBookingDateUnavailable(existing, 'p1', '2026-09-14', 'checkOut')).toBe(true)
+    expect(isBookingDateUnavailable(existing, 'p1', '2026-09-18', 'checkIn')).toBe(false)
+    expect(isBookingDateUnavailable(existing, 'p1', '2026-09-12', 'checkOut')).toBe(false)
   })
 })

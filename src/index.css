@@ -9,11 +9,12 @@ button, input, select, textarea { font: inherit; }
 
 
 html.dark { color-scheme: dark; }
-html.dark body { background: #0f131b; color: #e5e7eb; }
-html.dark .bg-white { background-color: #171c26 !important; }
-html.dark .bg-slate-50 { background-color: #1b212c !important; }
-html.dark .bg-slate-100 { background-color: #242b38 !important; }
-html.dark .bg-slate-200 { background-color: #303846 !important; }
+html.dark body, html.dark #root, html.dark .app-shell { background: #000 !important; color: #b8b8b8; }
+html.dark .app-bottom-nav { background: rgb(30 30 30 / 95%) !important; border-color: #3a3a3a !important; }
+html.dark .bg-white, html.dark .bg-white\/50, html.dark .bg-white\/90, html.dark .bg-white\/95, html.dark .bg-white\/96 { background-color: #242424 !important; }
+html.dark .bg-slate-50 { background-color: #2b2b2b !important; }
+html.dark .bg-slate-100 { background-color: #333 !important; }
+html.dark .bg-slate-200 { background-color: #3d3d3d !important; }
 html.dark .bg-violet-50 { background-color: #292240 !important; }
 html.dark .bg-violet-100 { background-color: #352b54 !important; }
 html.dark .border-slate-100 { border-color: #2b3340 !important; }
@@ -25,6 +26,9 @@ html.dark .text-slate-700 { color: #e2e8f0 !important; }
 html.dark .text-slate-600 { color: #cbd5e1 !important; }
 html.dark .text-slate-500 { color: #94a3b8 !important; }
 html.dark .text-slate-400 { color: #94a3b8 !important; }
+html.dark h1, html.dark h1.text-slate-900 { color: #808080 !important; }
+html.dark .bg-\[\#f6f1e9\] { background-color: #000 !important; }
+html.dark .bg-\[\#fffdfa\], html.dark .bg-\[\#fbfaf7\] { background-color: #242424 !important; }
 html.dark input, html.dark select, html.dark textarea { background-color: #171c26; color: #f8fafc; border-color: #394250; }
 html.dark input[readonly] { background-color: #1b212c !important; color: #94a3b8 !important; }
 html.dark .hover\:bg-slate-100:hover { background-color: #2a3240 !important; }

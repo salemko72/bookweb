@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 import { useAppLanguage, useT } from '../lib/i18n'
+import { formatDateInput } from '../lib/date-format'
 
 const WEEKDAYS = { en: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'], hr: ['Po', 'Ut', 'Sr', 'Če', 'Pe', 'Su', 'Ne'] } as const
 
@@ -11,11 +12,6 @@ function fromDateString(value: string) {
 
 function toDateString(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
-function formatEU(value: string) {
-  const date = fromDateString(value)
-  return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()}`
 }
 
 function monthTitle(date: Date, language: 'en' | 'hr') {
@@ -64,7 +60,7 @@ export function DatePicker({ value, onChange, label }: DatePickerProps) {
         }}
         className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-sm font-normal outline-none hover:border-slate-300 focus:border-violet-400"
       >
-        <span>{formatEU(value)}</span>
+        <span>{formatDateInput(value)}</span>
         <CalendarDays size={16} className="text-violet-500" />
       </button>
       {open && (
@@ -84,7 +80,7 @@ export function DatePicker({ value, onChange, label }: DatePickerProps) {
               return <button key={iso} type="button" onClick={() => choose(date)} className={['h-8 rounded-lg text-xs font-semibold transition', inMonth ? 'text-slate-700' : 'text-slate-300', selected ? 'bg-violet-600 text-white hover:bg-violet-600' : 'hover:bg-violet-50'].join(' ')}>{date.getDate()}</button>
             })}
           </div>
-          <div className="mt-2 border-t border-slate-100 pt-2 text-right text-[10px] font-semibold text-slate-400">{formatEU(value)}</div>
+          <div className="mt-2 border-t border-slate-100 pt-2 text-right text-[10px] font-semibold text-slate-400">{formatDateInput(value)}</div>
         </div>
       )}
     </div>

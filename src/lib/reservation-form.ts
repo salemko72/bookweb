@@ -38,3 +38,19 @@ export function findBookingConflict(
     return values.checkIn < existingEnd && values.checkOut > existingStart
   })
 }
+
+export function isBookingDateUnavailable(
+  reservations: Reservation[],
+  propertyId: string,
+  date: string,
+  boundary: 'checkIn' | 'checkOut',
+): boolean {
+  return reservations.some((reservation) => {
+    if (reservation.property_id !== propertyId || reservation.status === 'cancelled') return false
+    const existingStart = reservation.check_in.slice(0, 10)
+    const existingEnd = reservation.check_out.slice(0, 10)
+    return boundary === 'checkIn'
+      ? date >= existingStart && date < existingEnd
+      : date > existingStart && date < existingEnd
+  })
+}
