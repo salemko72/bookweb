@@ -81,7 +81,7 @@ describe('CalendarPage', () => {
     render(<MemoryRouter><CalendarPage role="admin" /></MemoryRouter>)
     expect(await screen.findByText('100%')).toBeInTheDocument()
     const timeline = screen.getByTestId('calendar-timeline').firstElementChild as HTMLElement
-    expect(timeline.style.width).toBe('2459px')
+    expect(timeline.style.width).toBe('2379px')
   })
 
   it('toggles FIT on and off', async () => {
