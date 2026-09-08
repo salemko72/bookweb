@@ -7,17 +7,17 @@ import type { Reservation } from '../lib/reservations-repository'
 import type { Property } from '../lib/properties-repository'
 import { useT } from '../lib/i18n'
 
-type Props = { property: Property; reservations: Reservation[] }
+type Props = { property: Property; reservations: Reservation[]; startDate?: string }
 
 function toDateString(date: Date) { return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
 function todayString() { return toDateString(new Date()) }
 function addDays(value: string, days: number) { const d = new Date(`${value}T12:00:00`); d.setDate(d.getDate()+days); return toDateString(d) }
 function sourceLabel(source: string) { const s = normalizeSource(source); return s === 'airbnb' ? 'AIRBNB' : s === 'booking' ? 'BOOKING' : s === 'agency' ? 'AGENCY' : 'DIRECT' }
 
-export function PropertyTimeline({ property, reservations }: Props) {
+export function PropertyTimeline({ property, reservations, startDate }: Props) {
   const t = useT()
   const navigate = useNavigate()
-  const start = todayString()
+  const start = startDate || todayString()
   const end = addDays(start, 29)
   const days = useMemo(() => buildCalendarDays(start, end), [start, end])
   const visible = reservations.filter((item) => item.property_id === property.id)

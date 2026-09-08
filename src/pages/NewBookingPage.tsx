@@ -4,7 +4,7 @@ import { CalendarDays, FileText, UserRound, UsersRound } from 'lucide-react'
 import { DatePicker } from '../components/DatePicker'
 import { useNavigate } from 'react-router-dom'
 import { getProperties, type Property } from '../lib/properties-repository'
-import { getReservations } from '../lib/reservations-repository'
+import { getReservations, type Reservation } from '../lib/reservations-repository'
 import { createReservationWithCleaning } from '../lib/booking-workflow'
 import { findBookingConflict, isBookingDateUnavailable, validateBookingForm, type BookingFormValues } from '../lib/reservation-form'
 import { formatDateRange } from '../lib/date-format'
@@ -16,6 +16,7 @@ import { PropertyTimeline } from '../components/PropertyTimeline'
 import { BlockDatesDialog } from '../components/BlockDatesDialog'
 
 function todayString() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+function addDays(value:string,days:number){const d=new Date(`${value}T12:00:00`);d.setDate(d.getDate()+days);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 const initial: BookingFormValues = { propertyId:'', checkIn:todayString(), checkOut:todayString(), guestName:'', guests:1, source:'direct', notes:'' }
 
 export function NewBookingPage() {
@@ -23,6 +24,7 @@ export function NewBookingPage() {
   const [blocking,setBlocking] = useState(false)
   const [checkingAvailability,setCheckingAvailability] = useState(false)
   const [availabilityError,setAvailabilityError] = useState<string|null>(null)
+  const [timelineReservations,setTimelineReservations] = useState<Reservation[]>([])
   const t=useT(); const navigate=useNavigate(); const [properties,setProperties]=useState<Property[]>([]); const [form,setForm]=useState<BookingFormValues>(initial); const [loading,setLoading]=useState(true); const [saving,setSaving]=useState(false); const [error,setError]=useState<string|null>(null); const [message,setMessage]=useState<string|null>(null)
   useEffect(()=>{getProperties().then(items=>{setProperties(items);setForm(current=>({...current,propertyId:current.propertyId||items[0]?.id||''}));setLoading(false)}).catch(()=>{setError(t('unableLoadProperties'));setLoading(false)})},[t])
   const selectedProperty=useMemo(()=>properties.find(p=>p.id===form.propertyId),[properties,form.propertyId])
@@ -33,14 +35,17 @@ export function NewBookingPage() {
     let active=true
     if(!form.propertyId||!form.checkIn||!form.checkOut)return()=>{active=false}
     const first=form.checkIn<form.checkOut?form.checkIn:form.checkOut
-    const last=form.checkIn>form.checkOut?form.checkIn:form.checkOut
+    const selectedLast=form.checkIn>form.checkOut?form.checkIn:form.checkOut
+    const timelineLast=addDays(form.checkIn,29)
+    const last=selectedLast>timelineLast?selectedLast:timelineLast
     getReservations(`${first}T00:00:00`,`${last}T23:59:59.999`).then(items=>{
       if(!active)return
+      setTimelineReservations(items)
       const unavailable=form.checkOut>form.checkIn
         ? findBookingConflict(items,{propertyId:form.propertyId,checkIn:form.checkIn,checkOut:form.checkOut,guestName:'',guests:1,source:'direct',notes:''})
         : isBookingDateUnavailable(items,form.propertyId,form.checkIn,'checkIn')||isBookingDateUnavailable(items,form.propertyId,form.checkOut,'checkOut')
       setAvailabilityError(unavailable?t('overlappingBooking'):null)
-    }).catch(()=>{if(active)setAvailabilityError(null)}).finally(()=>{if(active)setCheckingAvailability(false)})
+    }).catch(()=>{if(active){setAvailabilityError(null);setTimelineReservations([])}}).finally(()=>{if(active)setCheckingAvailability(false)})
     return()=>{active=false}
   },[form.propertyId,form.checkIn,form.checkOut,t])
   function update<K extends keyof BookingFormValues>(key:K,value:BookingFormValues[K]){setForm(current=>({...current,[key]:value}))}
@@ -54,7 +59,7 @@ export function NewBookingPage() {
     <section className="rounded-[1.35rem] bg-white p-4"><div className="flex items-center gap-2 text-sm font-semibold"><CalendarDays size={17} className="text-violet-500"/>{t('stay')}</div><div className="mt-3 grid gap-3 md:grid-cols-2"><label className="text-[11px] font-semibold text-slate-600 md:col-span-2">{t('properties')}<select id="property" value={form.propertyId} onChange={e=>{setCheckingAvailability(true);setAvailabilityError(null);update('propertyId',e.target.value)}} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal outline-none focus:border-violet-400">{properties.map(property=><option key={property.id} value={property.id}>{property.name} · {property.capacity}</option>)}</select></label>
       <label className="text-[11px] font-semibold text-slate-600">{t('checkIn')}<DatePicker label={t('checkIn')} value={form.checkIn} onChange={(value)=>updateBookingDate('checkIn',value)}/></label>
       <label className="text-[11px] font-semibold text-slate-600">{t('checkOut')}<DatePicker label={t('checkOut')} value={form.checkOut} onChange={(value)=>updateBookingDate('checkOut',value)}/></label>
-    </div>{checkingAvailability&&<p aria-live="polite" className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-500">{t('checkingAvailability')}</p>}{availabilityError&&<p role="alert" className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700">{availabilityError}</p>}<p className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-500">{formatDateRange(`${form.checkIn}T12:00:00`,`${form.checkOut}T12:00:00`)}</p>{selectedProperty&&<PropertyTimeline property={selectedProperty} reservations={[]}/>}</section>
+    </div>{checkingAvailability&&<p aria-live="polite" className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-500">{t('checkingAvailability')}</p>}{availabilityError&&<p role="alert" className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-semibold text-rose-700">{availabilityError}</p>}<p className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-[11px] font-semibold text-slate-500">{formatDateRange(`${form.checkIn}T12:00:00`,`${form.checkOut}T12:00:00`)}</p>{selectedProperty&&<PropertyTimeline property={selectedProperty} reservations={timelineReservations} startDate={form.checkIn}/>}</section>
     <section className="rounded-[1.35rem] bg-white p-4"><div className="flex items-center gap-2 text-sm font-semibold"><UserRound size={17} className="text-violet-500"/>{t('guest')}</div><div className="mt-3 grid gap-3 md:grid-cols-2"><label className="text-[11px] font-semibold text-slate-600">{t('guests')}<input id="guests" type="number" min={1} max={selectedProperty?.capacity} value={extras.adults+extras.children||''} onChange={e=>{if(e.target.value===''){setExtras(current=>({...current,adults:0,children:0}));return}const total=Math.min(selectedProperty?.capacity??999,Math.max(0,Number(e.target.value)));setExtras(current=>({...current,adults:Math.max(0,total-current.children),children:Math.min(current.children,total)}))}} onBlur={()=>{if(extras.adults+extras.children<1)setExtras(current=>({...current,adults:1,children:0}))}} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('source')}<select id="source" value={form.source} onChange={e=>update('source',e.target.value as 'direct'|'agency')} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal"><option value="direct">{t('directManual')}</option><option value="agency">{t('agency')}</option></select></label></div></section>
     <StayExtras value={extras} onChange={setExtras} start={form.checkIn} end={form.checkOut} guestName={form.guestName} defaultRate={selectedProperty?.nightly_rate} currency={selectedProperty?.currency ?? 'EUR'} onGuestName={name=>update('guestName',name)}/>
     <section className="rounded-[1.35rem] bg-white p-4"><div className="flex items-center gap-2 text-sm font-semibold"><FileText size={17} className="text-violet-500"/>{t('notes')}</div><textarea id="notes" rows={3} value={form.notes} onChange={e=>update('notes',e.target.value)} placeholder={t('optionalNotes')} className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-400"/></section>
