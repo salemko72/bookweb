@@ -80,11 +80,11 @@ export function PropertiesPage({ role = 'viewer' }: { role?: UserRole } = {}) {
   const activeProperties = properties.filter(property => property.is_active)
   const inactiveProperties = properties.filter(property => !property.is_active)
 
-  return <section className="mx-auto max-w-6xl p-3 pb-8 md:p-5">
+  return <section className="mx-auto w-full min-w-0 max-w-6xl p-3 pb-8 md:p-5">
     <style>{`section:has(button[aria-label="Close property editor"]) label:has(input[step="0.01"]) { display: none; }`}</style>
     <header className="mb-5 flex items-end justify-between gap-4"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">{t('portfolio')}</p><h1 className="mt-1 text-[2.7rem] font-light tracking-tight sm:text-[3.4rem]">{t('properties')}</h1><p className="mt-1 text-xs text-slate-500">{t('homesDetailsAvailability')}</p></div>{role==='admin'&&<button type="button" onClick={startCreate} className="flex shrink-0 items-center gap-2 rounded-xl bg-violet-600 px-3.5 py-2.5 text-xs font-semibold text-white hover:bg-violet-700"><Plus size={16}/><span className="hidden sm:inline">{t('newProperty')}</span></button>}</header>
     {error&&<div role="alert" className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs text-rose-700">{error}</div>}{message&&<div role="status" className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs text-emerald-700">{message}</div>}
-    <div className={`${editorOpen ? 'flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_430px]' : 'block'} items-start`}>
+    <div className={`${editorOpen ? 'flex min-w-0 flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1fr)_430px]' : 'block'} items-start`}>
       <div data-testid="properties-grid" className="grid items-start grid-cols-2 gap-3 md:grid-cols-3">
         {loading?<p className="col-span-2 text-xs text-slate-500 md:col-span-3">Loading properties...</p>:properties.length===0?<div className="col-span-2 rounded-[1.35rem] bg-white p-7 text-center md:col-span-3"><p className="text-base font-semibold">No properties yet</p><p className="mt-1 text-xs text-slate-500">Create your first property to start managing availability.</p></div>:[...activeProperties,...(inactiveProperties.length?[{id:'inactive-divider',name:'Inactive properties',is_active:false} as Property]:[]),...inactiveProperties].map(property=>{
           if(property.id==='inactive-divider') return <div key={property.id} className="col-span-full border-t border-slate-300 pt-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Inactive properties</div>
