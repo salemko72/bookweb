@@ -20,6 +20,7 @@ describe('DatePicker', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Check-in' }))
     fireEvent.click(screen.getAllByRole('button', { name: '18' })[0])
     expect(onChange).toHaveBeenCalledWith('2026-09-18')
+    expect(screen.queryByText('September 2026')).not.toBeInTheDocument()
   })
 
   it('builds a complete six-week month grid', () => {

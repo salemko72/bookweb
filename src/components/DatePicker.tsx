@@ -44,9 +44,11 @@ export function DatePicker({ value, onChange, label }: DatePickerProps) {
   const cells = useMemo(() => buildMonthCells(anchor), [anchor])
 
   function choose(date: Date) {
-    onChange(toDateString(date))
-    setAnchor(date)
+    // Close before notifying the parent. This prevents mobile Safari from
+    // keeping/reopening the popover while the surrounding form rerenders.
     setOpen(false)
+    setAnchor(date)
+    onChange(toDateString(date))
   }
 
   return (
@@ -77,7 +79,7 @@ export function DatePicker({ value, onChange, label }: DatePickerProps) {
             {cells.map(({ date, inMonth }) => {
               const iso = toDateString(date)
               const selected = iso === value
-              return <button key={iso} type="button" onClick={() => choose(date)} className={['h-8 rounded-lg text-xs font-semibold transition', inMonth ? 'text-slate-700' : 'text-slate-300', selected ? 'bg-violet-600 text-white hover:bg-violet-600' : 'hover:bg-violet-50'].join(' ')}>{date.getDate()}</button>
+              return <button key={iso} type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); choose(date) }} className={['h-8 rounded-lg text-xs font-semibold transition', inMonth ? 'text-slate-700' : 'text-slate-300', selected ? 'bg-violet-600 text-white hover:bg-violet-600' : 'hover:bg-violet-50'].join(' ')}>{date.getDate()}</button>
             })}
           </div>
           <div className="mt-2 border-t border-slate-100 pt-2 text-right text-[10px] font-semibold text-slate-400">{formatDateInput(value)}</div>
