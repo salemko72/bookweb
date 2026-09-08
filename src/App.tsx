@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell'
 import { LoginForm } from './components/LoginForm'
 import { WelcomeIllustration } from './components/WelcomeIllustration'
 import { CalendarPage } from './pages/CalendarPage'
+import { BackupPage } from './pages/BackupPage'
 import { EditReservationPage } from './pages/EditReservationPage'
 import { HomePage } from './pages/HomePage'
 import { NewBookingPage } from './pages/NewBookingPage'
@@ -11,8 +12,12 @@ import { PeoplePage } from './pages/PeoplePage'
 import { PropertiesPage } from './pages/PropertiesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { AdministrationPages } from './pages/AdministrationPages'
-import { getCurrentSession } from './lib/auth-supabase'
+import { getCurrentSession, signOut } from './lib/auth-supabase'
+import { getProfile } from './lib/profiles-repository'
+import { canOpenPage, type UserProfile } from './lib/permissions'
+import { CleaningPage } from './pages/CleaningPage'
 import { useT } from './lib/i18n'
+import { OperationsPage } from './pages/OperationsPage'
 
 function LoginScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
   const t = useT()
@@ -37,9 +42,61 @@ function App() {
   const navigate = useNavigate()
   const [checkingSession, setCheckingSession] = useState(true)
   const [authenticated, setAuthenticated] = useState(false)
-  useEffect(() => { let mounted = true; getCurrentSession().then((session) => { if (!mounted) return; setAuthenticated(Boolean(session)); setCheckingSession(false) }); return () => { mounted = false } }, [])
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [accessError, setAccessError] = useState(false)
+  const [revision, setRevision] = useState(0)
+  useEffect(() => {
+    let mounted = true
+    let generation = 0
+    async function refresh() {
+      const current = ++generation
+      try {
+        const session = await getCurrentSession()
+        const next = session?.user?.id ? await getProfile(session.user.id) : null
+        if (!mounted || current !== generation) return
+        setAuthenticated(Boolean(session))
+        const valid = next?.is_active === true && ['admin', 'manager', 'viewer', 'cleaning'].includes(next.role)
+        setProfile(valid ? next : null)
+        setAccessError(Boolean(session) && !valid)
+      } catch {
+        if (mounted && current === generation) { setProfile(null); setAccessError(true) }
+      } finally { if (mounted && current === generation) setCheckingSession(false) }
+    }
+    void refresh()
+    const onFocus = () => { void refresh() }
+    window.addEventListener('focus', onFocus)
+    const timer = window.setInterval(onFocus, 30000)
+    return () => { mounted = false; window.clearInterval(timer); window.removeEventListener('focus', onFocus) }
+  }, [revision])
+  async function logout() {
+    try {
+      const result = await signOut()
+      if (result?.error) throw result.error
+      setProfile(null); setAuthenticated(false); setAccessError(false); navigate('/')
+    } catch { setAccessError(true); setProfile(null) }
+  }
   if (checkingSession) return <main className="flex min-h-screen items-center justify-center bg-slate-100 text-sm text-slate-500">Loading...</main>
-  if (!authenticated) return <LoginScreen onAuthenticated={() => { setAuthenticated(true); navigate('/') }} />
-  return <AppShell><Routes><Route path="/" element={<HomePage onLogout={() => setAuthenticated(false)} />} /><Route path="/calendar" element={<CalendarPage />} /><Route path="/edit-reservation/:id" element={<EditReservationPage />} /><Route path="/properties" element={<PropertiesPage />} /><Route path="/new-booking" element={<NewBookingPage />} /><Route path="/settings" element={<SettingsPage />} /><Route path="/people" element={<PeoplePage />} /><Route path="/calendar-sources" element={<AdministrationPages mode="calendar-sources" />} /><Route path="/notifications" element={<AdministrationPages mode="notifications" />} /><Route path="/account" element={<AdministrationPages mode="account" />} /></Routes></AppShell>
+  if (accessError) return <main className="mx-auto max-w-lg p-6"><div role="alert"><h1 className="text-2xl font-semibold">Account access unavailable</h1><p className="mt-3">Your account may be inactive, or access could not be verified. Contact your administrator or try again.</p></div><button className="mt-4 rounded-xl bg-violet-600 px-4 py-2 text-white" onClick={() => setRevision(value => value + 1)}>Try again</button><button className="ml-3 p-2" onClick={() => void logout()}>Sign out</button></main>
+  if (!authenticated || !profile) return <LoginScreen onAuthenticated={() => { setCheckingSession(true); setRevision(value => value + 1); navigate('/') }} />
+  const role = profile.role
+  const denied = <section role="alert" className="mx-auto max-w-xl p-6"><h1 className="text-2xl font-semibold">Access denied</h1><p className="mt-2">Your role does not have access to this page.</p></section>
+  const guard = (path: string, page: React.ReactNode) => canOpenPage(role, path) ? page : denied
+  return <AppShell role={role}><Routes>
+    {(['reservations','guests','tasks','blocks'] as const).map(mode => <Route key={mode} path={`/${mode}`} element={guard(`/${mode}`, <OperationsPage key={`${mode}-${role}`} mode={mode} role={role}/>)} />)}
+    <Route path="/" element={role === 'cleaning' ? <CleaningPage onLogout={() => void logout()} /> : <HomePage onLogout={() => { setProfile(null); setAuthenticated(false) }} />} />
+    <Route path="/calendar" element={guard('/calendar', <CalendarPage role={role} />)} />
+    <Route path="/backup" element={guard('/backup', <BackupPage />)} />
+    <Route path="/edit-reservation/:id" element={guard('/edit-reservation/id', <EditReservationPage role={role} />)} />
+    <Route path="/properties" element={guard('/properties', <PropertiesPage role={role} />)} />
+    <Route path="/new-booking" element={guard('/new-booking', <NewBookingPage />)} />
+    <Route path="/settings" element={<SettingsPage role={role} />} />
+    <Route path="/people" element={guard('/people', <PeoplePage />)} />
+    <Route path="/calendar-sources" element={guard('/calendar-sources', <AdministrationPages mode="calendar-sources" />)} />
+    <Route path="/notifications" element={<AdministrationPages mode="notifications" />} />
+    <Route path="/account" element={<AdministrationPages mode="account" />} />
+    <Route path="*" element={denied} />
+  </Routes></AppShell>
 }
 export default App
+
+

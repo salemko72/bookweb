@@ -21,11 +21,13 @@ export function AddressAutocomplete({ value, onChange }: Props) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
+  const [chosen, setChosen] = useState(value.address.trim().length > 0)
   const requestRef = useRef<AbortController | null>(null)
 
   useEffect(() => { setQuery(value.address) }, [value.address])
 
   useEffect(() => {
+    if (chosen) return
     const q = query.trim()
     if (q.length < 3) { setSuggestions([]); return }
     const timer = window.setTimeout(() => {
@@ -39,11 +41,12 @@ export function AddressAutocomplete({ value, onChange }: Props) {
       }).finally(() => setLoading(false))
     }, 450)
     return () => window.clearTimeout(timer)
-  }, [query])
+  }, [query, chosen])
 
   function choose(item: AddressSuggestion) {
     setQuery(item.address)
     setSuggestions([])
+    setChosen(true)
     onChange({ address: item.address, city: item.city, latitude: item.latitude, longitude: item.longitude })
   }
 
@@ -53,7 +56,8 @@ export function AddressAutocomplete({ value, onChange }: Props) {
       <Search size={15} aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
       <input
         value={query}
-        onChange={(e) => { setQuery(e.target.value); onChange({ ...value, address: e.target.value, latitude: null, longitude: null }) }}
+        onFocus={() => { if (!query.trim()) setChosen(false) }}
+        onChange={(e) => { const next=e.target.value; setQuery(next); if (!next.trim()) setChosen(false); onChange({ ...value, address: next, city: next.trim() ? value.city : '', latitude: null, longitude: null }) }}
         placeholder={t('addressSearch')}
         autoComplete="off"
         className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-sm outline-none focus:border-violet-400"

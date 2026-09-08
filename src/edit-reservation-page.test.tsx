@@ -10,6 +10,7 @@ const getProperties = vi.hoisted(() => vi.fn())
 
 vi.mock('./lib/reservations-repository', () => ({ getReservation, getReservations, updateReservation, deleteReservation }))
 vi.mock('./lib/properties-repository', () => ({ getProperties }))
+vi.mock('./lib/operations', async importOriginal => ({...await importOriginal<typeof import('./lib/operations')>(),listGuests:vi.fn().mockResolvedValue([]),saveGuest:vi.fn().mockResolvedValue({id:'g1'})}))
 
 import { EditReservationPage } from './pages/EditReservationPage'
 
@@ -20,14 +21,22 @@ const reservation = { id:'r1', property_id:'p1', source:'direct', guest_name:'De
 beforeEach(()=>{vi.clearAllMocks();getProperties.mockResolvedValue([property, property2]);getReservation.mockResolvedValue(reservation);getReservations.mockResolvedValue([reservation]);updateReservation.mockResolvedValue(reservation);deleteReservation.mockResolvedValue(undefined)})
 
 describe('EditReservationPage',()=>{
+  it('shows reservation details without mutation controls to a viewer', async()=>{
+    render(<MemoryRouter initialEntries={['/edit-reservation/r1']}><Routes><Route path="/edit-reservation/:id" element={<EditReservationPage role="viewer"/>}/></Routes></MemoryRouter>)
+    expect(await screen.findByText('Reservation details')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Demo Guest')).toBeDisabled()
+    expect(screen.getByLabelText('Property')).toBeDisabled()
+    expect(screen.queryByRole('button',{name:/save changes/i})).not.toBeInTheDocument()
+    expect(updateReservation).not.toHaveBeenCalled()
+  })
   it('shows the editable reservation form', async()=>{
-    render(<MemoryRouter initialEntries={['/edit-reservation/r1']}><Routes><Route path="/edit-reservation/:id" element={<EditReservationPage/>}/></Routes></MemoryRouter>)
+    render(<MemoryRouter initialEntries={['/edit-reservation/r1']}><Routes><Route path="/edit-reservation/:id" element={<EditReservationPage role="admin"/>}/></Routes></MemoryRouter>)
     expect(await screen.findByText('Edit reservation')).toBeInTheDocument()
     expect(screen.getByText('10.09.2026')).toBeInTheDocument()
   })
 
   it('saves reservation changes', async()=>{
-    render(<MemoryRouter initialEntries={['/edit-reservation/r1']}><Routes><Route path="/edit-reservation/:id" element={<EditReservationPage/>}/></Routes></MemoryRouter>)
+    render(<MemoryRouter initialEntries={['/edit-reservation/r1']}><Routes><Route path="/edit-reservation/:id" element={<EditReservationPage role="admin"/>}/></Routes></MemoryRouter>)
     const guest = await screen.findByDisplayValue('Demo Guest')
     fireEvent.change(guest,{target:{value:'Updated Guest'}})
     fireEvent.click(screen.getByRole('button',{name:/save changes/i}))
@@ -38,7 +47,7 @@ describe('EditReservationPage',()=>{
 
 describe('EditReservationPage property move',()=>{
   it('allows moving a reservation to another property', async()=>{
-    render(<MemoryRouter initialEntries={['/edit-reservation/r1']}><Routes><Route path="/edit-reservation/:id" element={<EditReservationPage/>}/></Routes></MemoryRouter>)
+    render(<MemoryRouter initialEntries={['/edit-reservation/r1']}><Routes><Route path="/edit-reservation/:id" element={<EditReservationPage role="admin"/>}/></Routes></MemoryRouter>)
     await screen.findByText('Edit reservation')
     fireEvent.change(screen.getByLabelText('Property'),{target:{value:'p2'}})
     fireEvent.click(screen.getByRole('button',{name:/save changes/i}))

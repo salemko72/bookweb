@@ -53,10 +53,20 @@ beforeEach(() => {
 })
 
 describe('CalendarPage resize persistence', () => {
+  it('does not allow a viewer to resize a reservation', async () => {
+    render(<MemoryRouter><CalendarPage role="viewer" /></MemoryRouter>)
+    const handle = await screen.findByTestId('reservation-resize-end')
+    expect(handle).toBeDisabled()
+    fireEvent.pointerDown(handle, { clientX: 0 })
+    fireEvent.pointerMove(window, { clientX: 100 })
+    fireEvent.pointerUp(window)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(updateReservationDates).not.toHaveBeenCalled()
+  })
   it('saves a successful resize to Supabase', async () => {
     render(
       <MemoryRouter>
-        <CalendarPage />
+        <CalendarPage role="admin" />
       </MemoryRouter>,
     )
 
@@ -99,7 +109,7 @@ describe('CalendarPage resize persistence', () => {
 
     render(
       <MemoryRouter>
-        <CalendarPage />
+        <CalendarPage role="admin" />
       </MemoryRouter>,
     )
 

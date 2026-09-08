@@ -4,6 +4,13 @@ export type ReservationStatus = 'tentative' | 'confirmed' | 'cancelled'
 export type ReservationSource = 'airbnb' | 'booking' | 'direct' | 'agency'
 
 export type Reservation = {
+  guest_id?: string | null
+  adults?: number
+  children?: number
+  arrival_time?: string | null
+  special_request?: string | null
+  nightly_rate?: number | null
+  total_price?: number | null
   id: string
   property_id: string
   source: string
@@ -19,6 +26,12 @@ export type Reservation = {
 }
 
 export type CreateReservationInput = {
+  guest_id?: string | null
+  adults?: number
+  children?: number
+  arrival_time?: string | null
+  special_request?: string | null
+  nightly_rate?: number | null
   property_id: string
   source: ReservationSource
   guest_name: string
@@ -32,6 +45,12 @@ export type CreateReservationInput = {
 }
 
 export type UpdateReservationInput = {
+  guest_id?: string | null
+  adults?: number
+  children?: number
+  arrival_time?: string | null
+  special_request?: string | null
+  nightly_rate?: number | null
   property_id: string
   guest_name: string
   check_in: string

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { HomePage } from './pages/HomePage'
+import { MemoryRouter } from 'react-router-dom'
 
 const { getDailyOperationalDataMock, getPropertiesMock, signOutMock, getCurrentSessionMock } = vi.hoisted(() => ({
   getDailyOperationalDataMock: vi.fn(), getPropertiesMock: vi.fn(), signOutMock: vi.fn().mockResolvedValue(undefined), getCurrentSessionMock: vi.fn().mockResolvedValue({ user: { id: 'u1' } }),
@@ -19,7 +20,7 @@ describe('HomePage', () => {
   })
 
   it('shows daily overview with three square action cards and today/tomorrow columns', async () => {
-    render(<HomePage />)
+    render(<MemoryRouter><HomePage /></MemoryRouter>)
     expect(await screen.findByRole('heading', { name: /daily overview/i })).toBeInTheDocument()
     expect(screen.getByText(/good morning, kate/i)).toBeInTheDocument()
     expect(screen.getByTestId('home-summary-grid')).toHaveClass('grid-cols-3')
@@ -38,14 +39,15 @@ describe('HomePage', () => {
       cleanings: [],
     })
     getPropertiesMock.mockResolvedValue([{ id: 'p1', name: 'Priko', image_url: 'https://example.com/priko.jpg', capacity: 6, rooms: 3, area_m2: 61, check_in_time: '14:00:00', check_out_time: '10:00:00', cleaning_duration_minutes: 120, wifi: true, air_conditioning: true, is_active: true }])
-    render(<HomePage />)
+    render(<MemoryRouter><HomePage /></MemoryRouter>)
     expect(await screen.findByText('Nelly Guest')).toBeInTheDocument()
     expect(screen.getByTestId('home-event-image-r2')).toHaveAttribute('src', 'https://example.com/priko.jpg')
+    expect(screen.getByRole('link', { name: /nelly guest.*edit reservation/i })).toHaveAttribute('href', '/edit-reservation/r2')
   })
 
   it('logs out from the Home header control', async () => {
     const onLogout = vi.fn()
-    render(<HomePage onLogout={onLogout} />)
+    render(<MemoryRouter><HomePage onLogout={onLogout} /></MemoryRouter>)
     const button = await screen.findByRole('button', { name: /logout/i })
     fireEvent.click(button)
     await waitFor(() => expect(signOutMock).toHaveBeenCalledTimes(1))
@@ -53,7 +55,7 @@ describe('HomePage', () => {
   })
 
   it('loads daily data', async () => {
-    render(<HomePage />)
+    render(<MemoryRouter><HomePage /></MemoryRouter>)
     await waitFor(() => {
       expect(getDailyOperationalDataMock).toHaveBeenCalled()
       expect(getPropertiesMock).toHaveBeenCalled()

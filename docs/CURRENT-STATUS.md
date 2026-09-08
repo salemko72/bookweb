@@ -2,7 +2,31 @@
 
 Date of handoff: 2026-09-07
 
+## Verified deactivation fix — 2026-09-07
+
+- Applied `supabase/007_inactive_user_access.sql` to `jawcaedeynlbyntjolrg`.
+- All seven application tables now require an active account through a restrictive RLS policy. Existing permissive policies cannot bypass this requirement.
+- `has_property_access` now rejects inactive/missing profiles even when property assignments remain.
+- Real database regression: `supabase/tests/inactive-user-access.sql` reproduced four inactive-role failures before the fix; all eight active/inactive role cases passed in a rollback-only preview and again after deployment.
+- Tests use temporary synthetic users/properties and roll back every fixture and write. Select the entire script before Run selected in the SQL Editor.
+- Local regression: 46 test files / 123 tests passed. A pre-existing worker shutdown timeout warning remains for `properties-page.test.tsx`.
+- TypeScript and Vite build passed using native config loading; bundle warning remains at approximately 568 kB.
+- Full master DOCX supplied by the user is now stored in `docs/`.
+- This is the database deactivation fix only. UI access-denied handling, Cleaning guest-data restriction, missing permissive policies for iCal/conflicts, auth recovery, and other audit findings remain outstanding. No frontend deployment was made.
+
 ## Repository
+
+## V2 Operations implementation — 2026-09-08
+
+- Added availability blocks with database-level overlap protection and calendar display.
+- Added Reservations search and filters for reference, guest, source, status, upcoming/current and conflicts.
+- Added guest contacts and cards with contact details and linked stay history; repeat guest is derived from stays.
+- Added arrival details, adult/child counts, nightly rate and automatic total price calculation.
+- Added property-level tasks for Cleaning, Maintenance, Inspection, Linen, Repair, Delivery, Supplies and Other.
+- Cleaning users receive operational task data only; guest contacts remain unavailable to them.
+- Applied `supabase/009_operations.sql` and `supabase/010_operations_completion.sql` to the hosted project.
+- Hosted rollback regression passed for blocks, imported conflicts, rates, cleaning rescheduling, contacts, task access and deactivation.
+- Local regression: 52 test files / 142 tests passed. Production build passed. Non-blocking worker shutdown warnings remain in calendar tests.
 
 Local project:
 `C:\BOOKWEB`

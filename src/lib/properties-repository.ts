@@ -20,6 +20,8 @@ export type Property = {
   keybox?: boolean
   air_conditioning: boolean
   cleaning_duration_minutes: number
+  nightly_rate?: number | null
+  currency?: string
   is_active: boolean
 }
 
@@ -59,4 +61,10 @@ export async function updateProperty(id: string, changes: Partial<CreateProperty
 export async function deactivateProperty(id: string): Promise<void> {
   const { error } = await supabase.from('properties').update({ is_active: false }).eq('id', id)
   if (error) throw error
+}
+
+export async function deleteProperty(id: string): Promise<void> {
+  const { data, error } = await supabase.from('properties').delete().eq('id', id).select('id').single()
+  if (error) throw error
+  if (!data) throw new Error('Property was not deleted.')
 }

@@ -5,7 +5,7 @@ import { AppShell } from './components/AppShell'
 
 describe('AppShell', () => {
   it('shows the five primary application navigation items without logout', () => {
-    render(<MemoryRouter><AppShell><div>Page content</div></AppShell></MemoryRouter>)
+    render(<MemoryRouter><AppShell role="admin"><div>Page content</div></AppShell></MemoryRouter>)
     expect(screen.getByRole('link', { name: /calendar/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /properties/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /new booking/i })).toBeInTheDocument()

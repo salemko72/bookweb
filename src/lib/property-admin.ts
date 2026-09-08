@@ -19,6 +19,8 @@ export type PropertyFormValues = {
   keybox: boolean
   air_conditioning: boolean
   cleaning_duration_minutes: number
+  nightly_rate?: number | null
+  currency?: string
   is_active: boolean
 }
 
@@ -27,6 +29,7 @@ export function validateProperty(values: PropertyFormValues): string | null {
   if (!Number.isInteger(values.capacity) || values.capacity < 1) return 'Capacity must be at least 1.'
   if (!Number.isInteger(values.rooms) || values.rooms < 1) return 'Rooms must be at least 1.'
   if (values.area_m2 !== null && values.area_m2 < 0) return 'Area cannot be negative.'
+  if (values.nightly_rate != null && (!Number.isFinite(values.nightly_rate) || values.nightly_rate < 0)) return 'Nightly price cannot be negative.'
   if (!values.check_in_time) return 'Select a check-in time.'
   if (!values.check_out_time) return 'Select a check-out time.'
   if (!Number.isInteger(values.cleaning_duration_minutes) || values.cleaning_duration_minutes < 0) return 'Cleaning duration cannot be negative.'
@@ -54,6 +57,8 @@ export function propertyToFormValues(property: Property): PropertyFormValues {
     keybox: property.keybox ?? false,
     air_conditioning: property.air_conditioning,
     cleaning_duration_minutes: property.cleaning_duration_minutes,
+    nightly_rate: property.nightly_rate ?? null,
+    currency: property.currency ?? 'EUR',
     is_active: property.is_active,
   }
 }

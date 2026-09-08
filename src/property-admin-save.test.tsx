@@ -31,7 +31,7 @@ describe('property save flow', () => {
   })
 
   it('returns to the property list after saving a new property', async () => {
-    render(<MemoryRouter><PropertiesPage /></MemoryRouter>)
+    render(<MemoryRouter><PropertiesPage role="admin" /></MemoryRouter>)
     fireEvent.click(await screen.findByRole('button', { name: /new property/i }))
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Priko' } })
     fireEvent.click(screen.getByRole('button', { name: /create property/i }))
@@ -40,7 +40,7 @@ describe('property save flow', () => {
   })
 
   it('allows adding a calendar link before saving a new property', async () => {
-    render(<MemoryRouter><PropertiesPage /></MemoryRouter>)
+    render(<MemoryRouter><PropertiesPage role="admin" /></MemoryRouter>)
     fireEvent.click(await screen.findByRole('button', { name: /new property/i }))
     expect(screen.getByText('Calendar links')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Priko' } })

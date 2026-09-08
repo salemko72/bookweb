@@ -21,6 +21,8 @@ describe('property administration', () => {
     keybox: false,
     air_conditioning: true,
     cleaning_duration_minutes: 120,
+    nightly_rate: null,
+    currency: 'EUR',
     is_active: true,
   }
 

@@ -19,7 +19,8 @@ describe('AddressAutocomplete', () => {
       longitude: 16.595,
     }])
     const onChange = vi.fn()
-    render(<AddressAutocomplete value={{ address: 'Kralja Tom', city: '', latitude: null, longitude: null }} onChange={onChange} />)
+    render(<AddressAutocomplete value={{ address: '', city: '', latitude: null, longitude: null }} onChange={onChange} />)
+    fireEvent.change(screen.getByPlaceholderText('addressSearch'), { target: { value: 'Kralja Tom' } })
     await waitFor(() => expect(screen.getByRole('option')).toBeInTheDocument())
     fireEvent.pointerDown(screen.getByRole('option'))
     expect(onChange).toHaveBeenCalledWith({ address: 'Kralja Tomislava 27', city: 'Stari Grad', latitude: 43.184, longitude: 16.595 })

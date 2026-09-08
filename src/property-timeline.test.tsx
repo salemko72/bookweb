@@ -16,7 +16,7 @@ beforeEach(()=>vi.clearAllMocks())
 describe('PropertyTimeline',()=>{
   it('renders a compact three-month reminder timeline',()=>{
     render(<MemoryRouter><PropertyTimeline property={property} reservations={[reservation]}/></MemoryRouter>)
-    expect(screen.getByTestId('property-mini-timeline')).toHaveTextContent('Next 3 months')
+    expect(screen.getByTestId('property-mini-timeline')).toHaveTextContent('Next 30 days')
     expect(screen.getByTitle(/Demo/)).toBeInTheDocument()
   })
 

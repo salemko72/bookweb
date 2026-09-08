@@ -42,7 +42,7 @@ describe('PropertiesPage data loading', () => {
   it('loads and displays properties from the repository', async () => {
     getAllPropertiesMock.mockResolvedValue(properties)
 
-    render(<PropertiesPage />)
+    render(<PropertiesPage role="admin" />)
 
     expect(screen.getByText('Loading properties...')).toBeInTheDocument()
 
@@ -57,7 +57,7 @@ describe('PropertiesPage data loading', () => {
   it('shows a repository error', async () => {
     getAllPropertiesMock.mockRejectedValue(new Error('Database unavailable'))
 
-    render(<PropertiesPage />)
+    render(<PropertiesPage role="admin" />)
 
     await waitFor(() => {
       expect(screen.getByText('Unable to load properties.')).toBeInTheDocument()
@@ -67,7 +67,7 @@ describe('PropertiesPage data loading', () => {
   it('shows an empty state when there are no properties', async () => {
     getAllPropertiesMock.mockResolvedValue([])
 
-    render(<PropertiesPage />)
+    render(<PropertiesPage role="admin" />)
 
     await waitFor(() => {
       expect(screen.getByText('No properties yet')).toBeInTheDocument()

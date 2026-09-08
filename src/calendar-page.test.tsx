@@ -58,34 +58,34 @@ getReservationsMock.mockResolvedValue([reservation, overlappingReservation, impo
 
 describe('CalendarPage', () => {
   it('shows a dense 45-day default timeline', async () => {
-    render(<MemoryRouter><CalendarPage /></MemoryRouter>)
+    render(<MemoryRouter><CalendarPage role="admin" /></MemoryRouter>)
     const days = await screen.findAllByTestId(/^calendar-day-/)
     expect(days).toHaveLength(45)
   })
 
   it('renders the interactive timeline structure', async () => {
-    render(<MemoryRouter><CalendarPage /></MemoryRouter>)
+    render(<MemoryRouter><CalendarPage role="admin" /></MemoryRouter>)
     expect(await screen.findByText('Calendar')).toBeInTheDocument()
     expect(screen.getByTestId('calendar-timeline')).toBeInTheDocument()
     expect((await screen.findAllByTestId('calendar-property-row')).length).toBeGreaterThan(0)
   })
 
   it('renders the guest name and a compact source badge on the booking bar', async () => {
-    render(<MemoryRouter><CalendarPage /></MemoryRouter>)
+    render(<MemoryRouter><CalendarPage role="admin" /></MemoryRouter>)
     expect(await screen.findByText('Demo Guest')).toBeInTheDocument()
     expect(await screen.findByTestId('reservation-source-badge-r1')).toHaveTextContent('S')
     expect(await screen.findByText('10.09. - 15.09.2026')).toBeInTheDocument()
   })
 
   it('defaults the timeline to 100% while keeping the dense legacy day width', async () => {
-    render(<MemoryRouter><CalendarPage /></MemoryRouter>)
+    render(<MemoryRouter><CalendarPage role="admin" /></MemoryRouter>)
     expect(await screen.findByText('100%')).toBeInTheDocument()
     const timeline = screen.getByTestId('calendar-timeline').firstElementChild as HTMLElement
     expect(timeline.style.width).toBe('2379px')
   })
 
   it('toggles FIT on and off', async () => {
-    render(<MemoryRouter><CalendarPage /></MemoryRouter>)
+    render(<MemoryRouter><CalendarPage role="admin" /></MemoryRouter>)
     expect(await screen.findByText('Calendar')).toBeInTheDocument()
     const fit = screen.getByRole('button', { name: /fit/i })
     expect(fit).toHaveAttribute('aria-pressed', 'false')
@@ -99,19 +99,19 @@ describe('CalendarPage', () => {
   })
 
   it('renders resize handles for editable bookings', async () => {
-    render(<MemoryRouter><CalendarPage /></MemoryRouter>)
+    render(<MemoryRouter><CalendarPage role="admin" /></MemoryRouter>)
     expect((await screen.findAllByTestId('reservation-resize-start')).length).toBeGreaterThan(0)
     expect((await screen.findAllByTestId('reservation-resize-end')).length).toBeGreaterThan(0)
   })
 
   it('opens Edit Reservation on double-click', async () => {
-    render(<MemoryRouter><CalendarPage /><LocationProbe /></MemoryRouter>)
+    render(<MemoryRouter><CalendarPage role="admin" /><LocationProbe /></MemoryRouter>)
     fireEvent.doubleClick(await screen.findByTestId('reservation-body-r1'))
     expect((await screen.findByTestId('location')).textContent).toBe('/edit-reservation/r1')
   })
 
   it('renders bookings in separate vertical lanes when they overlap', async () => {
-    render(<MemoryRouter><CalendarPage /></MemoryRouter>)
+    render(<MemoryRouter><CalendarPage role="admin" /></MemoryRouter>)
     expect((await screen.findAllByTestId(/reservation-lane-/)).length).toBeGreaterThanOrEqual(2)
   })
 })
@@ -119,7 +119,7 @@ describe('CalendarPage', () => {
 
 describe('Calendar imported booking affordance',()=>{
   it('shows resize affordances on imported bookings but keeps them read-only', async()=>{
-    render(<MemoryRouter><CalendarPage/></MemoryRouter>)
+    render(<MemoryRouter><CalendarPage role="admin"/></MemoryRouter>)
     const starts = await screen.findAllByTestId('reservation-resize-start')
     expect(starts.length).toBeGreaterThanOrEqual(3)
     expect(starts.find((button) => button.getAttribute('title')?.includes('Imported reservation'))).toBeDisabled()

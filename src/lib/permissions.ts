@@ -27,3 +27,12 @@ export function canViewGuestDetails(role: UserRole): boolean {
 export function canManagePropertyAccess(role: UserRole): boolean {
   return role === 'admin'
 }
+
+export function canOpenPage(role: UserRole, path: string): boolean {
+  if (role === 'cleaning') return path === '/' || path === '/account' || path === '/tasks'
+  if (['/reservations','/guests','/tasks','/blocks'].includes(path)) return true
+  if (['/', '/settings', '/account', '/notifications'].includes(path)) return true
+  if (path === '/people' || path === '/calendar-sources' || path === '/backup') return role === 'admin'
+  if (path === '/new-booking') return canEditReservation(role)
+  return path === '/calendar' || path === '/properties' || path.startsWith('/edit-reservation/')
+}

@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
+import { useAppLanguage, useT } from '../lib/i18n'
 
-const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+const WEEKDAYS = { en: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'], hr: ['Po', 'Ut', 'Sr', 'Če', 'Pe', 'Su', 'Ne'] } as const
 
 function fromDateString(value: string) {
   const [year, month, day] = value.split('-').map(Number)
@@ -17,8 +18,8 @@ function formatEU(value: string) {
   return `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()}`
 }
 
-function monthTitle(date: Date) {
-  return new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' }).format(date)
+function monthTitle(date: Date, language: 'en' | 'hr') {
+  return new Intl.DateTimeFormat(language === 'hr' ? 'hr-HR' : 'en-GB', { month: 'long', year: 'numeric' }).format(date)
 }
 
 export function buildMonthCells(anchor: Date): Array<{ date: Date; inMonth: boolean }> {
@@ -40,6 +41,8 @@ type DatePickerProps = {
 }
 
 export function DatePicker({ value, onChange, label }: DatePickerProps) {
+  const t = useT()
+  const language = useAppLanguage()
   const [open, setOpen] = useState(false)
   const [anchor, setAnchor] = useState(() => fromDateString(value))
   const cells = useMemo(() => buildMonthCells(anchor), [anchor])
@@ -67,12 +70,12 @@ export function DatePicker({ value, onChange, label }: DatePickerProps) {
       {open && (
         <div className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-[296px] rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_50px_rgba(37,48,70,0.16)]">
           <div className="flex items-center justify-between px-1 pb-2">
-            <button type="button" aria-label="Previous month" onClick={() => setAnchor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1, 12))} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><ChevronLeft size={16} /></button>
-            <span className="text-sm font-semibold text-slate-800">{monthTitle(anchor)}</span>
-            <button type="button" aria-label="Next month" onClick={() => setAnchor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1, 12))} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><ChevronRight size={16} /></button>
+            <button type="button" aria-label={t('previousMonth')} onClick={() => setAnchor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1, 12))} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><ChevronLeft size={16} /></button>
+            <span className="text-sm font-semibold text-slate-800">{monthTitle(anchor, language)}</span>
+            <button type="button" aria-label={t('nextMonth')} onClick={() => setAnchor((current) => new Date(current.getFullYear(), current.getMonth() + 1, 1, 12))} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><ChevronRight size={16} /></button>
           </div>
           <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-semibold uppercase tracking-wide text-slate-400">
-            {WEEKDAYS.map((day) => <span key={day} className="py-1">{day}</span>)}
+            {WEEKDAYS[language].map((day) => <span key={day} className="py-1">{day}</span>)}
           </div>
           <div className="grid grid-cols-7 gap-1">
             {cells.map(({ date, inMonth }) => {

@@ -24,6 +24,7 @@ vi.mock('./pages/SettingsPage', () => ({ SettingsPage: () => <div>Settings page<
 vi.mock('./pages/PeoplePage', () => ({ PeoplePage: () => <div>People page</div> }))
 vi.mock('./pages/AdministrationPages', () => ({ AdministrationPages: () => <div>Administration page</div> }))
 
+vi.mock('./lib/profiles-repository', () => ({ getProfile: vi.fn().mockResolvedValue({id:'u1',role:'admin',is_active:true}) }))
 import App from './App'
 
 function LocationProbe() {
@@ -34,6 +35,7 @@ function LocationProbe() {
 describe('login redirect', () => {
   it('lands on Home after successful login', async () => {
     render(<MemoryRouter initialEntries={['/calendar']}><App/><LocationProbe/></MemoryRouter>)
+    getCurrentSession.mockResolvedValueOnce({ user: { id: 'u1' } })
     fireEvent.click(await screen.findByRole('button', { name: /mock sign in/i }))
     expect(await screen.findByText('Home dashboard')).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/')
