@@ -5,6 +5,7 @@ html { font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif; width: 1
 body, #root { margin: 0; width: 100%; max-width: 100%; min-width: 0; overflow-x: hidden; background: #f6f1e9; color: #18304f; }
 button, input, select, textarea { font: inherit; }
 * { box-sizing: border-box; }
+.status-ribbon-label { writing-mode: vertical-rl; transform: rotate(180deg); }
 
 
 html.dark { color-scheme: dark; }
