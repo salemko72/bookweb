@@ -9,7 +9,7 @@ export function AppShell({ children, role = 'viewer' }: AppShellProps) {
   const t = useT()
   const navItems = [
     { to: '/', label: t('home'), icon: Home },
-    { to: '/reservations', label: t('reservations'), icon: CalendarDays },
+    { to: '/reservations', label: t('list'), icon: CalendarDays },
     { to: '/calendar', label: t('calendar'), icon: CalendarDays },
     { to: '/properties', label: t('properties'), icon: Grid2X2 },
     { to: '/new-booking', label: t('reservation'), icon: Plus, primary: true },
