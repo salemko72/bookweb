@@ -9,4 +9,9 @@ describe('property image validation', () => {
   it('rejects non-image files', () => {
     expect(validateImageFile(new File(['text'], 'notes.txt', { type: 'text/plain' }))).toBe('Please choose an image file.')
   })
+
+  it('accepts large phone images for automatic compression', () => {
+    const largeImage = new File([new Uint8Array(3 * 1024 * 1024)], 'phone-photo.jpg', { type: 'image/jpeg' })
+    expect(validateImageFile(largeImage)).toBeNull()
+  })
 })
