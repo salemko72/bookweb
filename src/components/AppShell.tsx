@@ -19,8 +19,6 @@ export function AppShell({ children, role = 'viewer', agency = { id:'legacy', na
     { to: '/new-booking', label: t('reservation'), icon: Plus, primary: true },
     { to: '/settings', label: t('settings'), icon: Settings },
   ].filter((item) => canOpenPage(role, item.to))
-  const initials = agency.name.split(/\s+/).filter(Boolean).slice(0,2).map((part)=>part[0]).join('').toUpperCase() || 'A'
-
   return <div className="app-shell min-h-screen text-slate-900">
     <div className="app-background-layer" aria-hidden="true" />
     {desktop&&<aside className="app-side-nav fixed inset-y-0 left-0 z-40 flex w-[218px] flex-col border-r border-[#ded8cf] bg-[#fffdfa]/95 px-3 py-5 backdrop-blur">
@@ -30,7 +28,6 @@ export function AppShell({ children, role = 'viewer', agency = { id:'legacy', na
     </aside>}
 
     <main className="app-content relative z-10 min-h-screen pb-20 lg:ml-[218px] lg:pb-0">
-      <div className="agency-corner-mark fixed right-3 top-3 z-30 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-gradient-to-br from-violet-500 to-sky-400 text-sm font-semibold text-white shadow-[0_8px_28px_rgba(41,55,85,.18)] sm:right-5 sm:top-4 sm:h-[83px] sm:w-[83px] lg:right-7 lg:top-5 lg:h-[94px] lg:w-[94px]" title={agency.name} aria-label={agency.name}>{agency.logo_url?<img src={agency.logo_url} alt={agency.name} className="h-full w-full object-cover"/>:initials}</div>
       {children}
     </main>
 

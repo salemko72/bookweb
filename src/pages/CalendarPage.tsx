@@ -2,6 +2,7 @@ import { canEditReservation, type UserRole } from '../lib/permissions'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, EllipsisVertical, GripVertical, Minus, Plus } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { AgencyTitleMark } from '../components/AgencyTitleMark'
 import { buildCalendarDays, layoutReservations, type CalendarReservation } from '../lib/calendar-data'
 import { getProperties, type Property } from '../lib/properties-repository'
 import { getReservation, getReservations, updateReservationDates, type Reservation } from '../lib/reservations-repository'
@@ -183,7 +184,7 @@ export function CalendarPage({ role = 'viewer' }: { role?: UserRole } = {}) {
     {resizeMessage && <div role="alert" className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-700">{resizeMessage}</div>}
     {pendingResize && <div role="dialog" aria-modal="true" className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/25 p-4 backdrop-blur-[2px]"><div className="w-full max-w-md rounded-3xl bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.2)]"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">{t('confirmDateChange')}</p><h2 className="mt-2 text-xl font-semibold tracking-tight">{t('areYouSure')}</h2><p className="mt-2 text-sm text-slate-600">{t('changeReservationTo',{range:formatDateRange(pendingResize.nextCheckIn, pendingResize.nextCheckOut)})}</p><div className="mt-5 flex gap-2"><button type="button" onClick={cancelResize} className="flex-1 rounded-xl bg-slate-100 px-4 py-2.5 text-xs font-semibold text-slate-700">{t('cancel')}</button><button type="button" onClick={() => void confirmResize()} className="flex-1 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white">{t('confirmChange')}</button></div></div></div>}
     <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-      <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">{t('availability')}</p><h1 className="mt-1 text-[2.938rem] font-light leading-[.95] tracking-tight sm:text-[3.7rem]">{focusedReservationId ? (reservations.find(r=>r.id===focusedReservationId)?.guest_name || t('booking')) : t('calendar')}</h1><p className="mt-1 text-xs text-slate-500">{focusedReservationId ? t('focusedBookingView') : t('continuousTimeline')}</p></div>
+      <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">{t('availability')}</p><h1 className="mt-1 text-[2.938rem] font-light leading-[.95] tracking-tight sm:text-[3.7rem]">{focusedReservationId ? (reservations.find(r=>r.id===focusedReservationId)?.guest_name || t('booking')) : t('calendar')}<AgencyTitleMark /></h1><p className="mt-1 text-xs text-slate-500">{focusedReservationId ? t('focusedBookingView') : t('continuousTimeline')}</p></div>
       <div className="flex flex-wrap items-center gap-1.5">
         {focusedReservationId && <button type="button" onClick={()=>navigate('/reservations')} className="inline-flex items-center gap-1 rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white"><ChevronLeft size={16}/>{t('backToList')}</button>}
         <label className="order-4 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2 py-2 text-[10px] font-semibold text-slate-600">{t('sort')} <input aria-label={t('sortProperties')} type="checkbox" checked={sortOn} onChange={e=>setSortOn(e.target.checked)} className="accent-violet-600"/></label>
@@ -232,6 +233,12 @@ export function CalendarPage({ role = 'viewer' }: { role?: UserRole } = {}) {
             </div>
           </div>
         })}
+        <div data-testid="calendar-empty-row" aria-hidden="true" className="relative z-10 flex border-b border-slate-100" style={{minHeight:LANE_HEIGHT + 15}}>
+          <div className="sticky left-0 z-[60] shrink-0 border-r border-slate-200 bg-white/50" style={{width:ROW_LABEL_WIDTH}} />
+          <div className="relative" style={{width:days.length * dayWidth}}>
+            <div className="pointer-events-none absolute inset-0 flex">{days.map(day => <div key={day} className="h-full border-r border-slate-100" style={{width:dayWidth}} />)}</div>
+          </div>
+        </div>
       </div>
     </div>
     <p className="mt-2 text-[10px] text-slate-400">{t('calendarHint')}</p>

@@ -1,4 +1,5 @@
 import { Bell, CalendarDays, UserRound } from 'lucide-react'
+import { AgencyTitleMark } from '../components/AgencyTitleMark'
 
 type Props = { title: string; eyebrow: string; description: string; icon: 'calendar' | 'bell' | 'user' }
 
@@ -14,7 +15,7 @@ export function AdministrationPlaceholderPage({ title, eyebrow, description, ico
           </div>
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-500">{eyebrow}</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">{title}<AgencyTitleMark /></h1>
             <p className="mt-2 text-sm leading-6 text-slate-500">{description}</p>
           </div>
         </div>

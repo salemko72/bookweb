@@ -13,3 +13,7 @@ export function useAgency(): AgencyMembership {
   if (!agency) throw new Error('Agency context is unavailable.')
   return agency
 }
+
+export function useOptionalAgency(): AgencyMembership | null {
+  return useContext(AgencyContext)
+}

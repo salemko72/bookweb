@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Brush, LogOut } from 'lucide-react'
+import { AgencyTitleMark } from '../components/AgencyTitleMark'
 import { getCleaningWork, updateCleaningStatus, type CleaningWork } from '../lib/cleaning-work'
 import type { CleaningStatus } from '../lib/cleaning-repository'
 import { formatDate } from '../lib/date-format'
@@ -32,7 +33,7 @@ export function CleaningPage({ onLogout }: { onLogout: () => void }) {
   }
   return <section className="mx-auto max-w-4xl p-4 pb-8 md:p-7">
     <header className="mb-6 flex items-start justify-between gap-4">
-      <div><p className="text-xs font-semibold tracking-[0.16em] text-violet-500">PomaaaloDesk</p><h1 className="mt-2 text-3xl font-light text-slate-900">{hr ? 'Moja čišćenja' : 'My cleanings'}</h1><p className="mt-2 text-sm text-slate-500">{hr ? 'Zadaci za sljedećih 7 dana' : 'Tasks for the next 7 days'}</p></div>
+      <div><p className="text-xs font-semibold tracking-[0.16em] text-violet-500">PomaaaloDesk</p><h1 className="mt-2 text-3xl font-light text-slate-900">{hr ? 'Moja čišćenja' : 'My cleanings'}<AgencyTitleMark /></h1><p className="mt-2 text-sm text-slate-500">{hr ? 'Zadaci za sljedećih 7 dana' : 'Tasks for the next 7 days'}</p></div>
       <button onClick={onLogout} className="flex flex-col items-center gap-1 rounded-xl p-2 text-xs text-slate-600"><LogOut size={20}/>{hr ? 'Odjava' : 'Logout'}</button>
     </header>
     {error && <div role="alert" className="mb-4 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">{error}</div>}

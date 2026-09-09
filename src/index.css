@@ -12,9 +12,23 @@ button, input, select, textarea { font: inherit; }
 .welcome-primary { display: flex; width: 100%; align-items: center; justify-content: center; gap: .6rem; border-radius: .9rem; background: #7c3aed; padding: .8rem 1rem; font-size: .8rem; font-weight: 600; color: white; transition: background .15s, opacity .15s; }
 .welcome-primary:hover { background: #6d28d9; }
 .welcome-primary:disabled { cursor: wait; opacity: .55; }
-.app-content > section > header:first-child { padding-right: 6.5rem; }
-@media (min-width: 640px) { .app-content > section > header:first-child { padding-right: 7.5rem; } }
-@media (min-width: 1024px) { .app-content > section > header:first-child { padding-right: 8.5rem; } }
+.agency-title-mark {
+  display: inline-flex;
+  width: .86em;
+  height: .86em;
+  margin-left: .2em;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  vertical-align: -.1em;
+  border: 3px solid rgb(255 255 255 / 92%);
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #8b5cf6, #38bdf8);
+  color: white;
+  box-shadow: 0 7px 18px rgb(41 55 85 / 18%);
+}
+.agency-title-mark > img { width: 100%; height: 100%; object-fit: cover; }
+.agency-title-initials { font-size: .24em; font-weight: 600; line-height: 1; letter-spacing: 0; }
 
 /* The image lives in its own viewport-fixed layer so iOS Safari never scrolls it
    with the document, unlike background-attachment: fixed. */
@@ -63,7 +77,7 @@ html:not(.dark) .app-shell :where(input, select, textarea)[class~="bg-white"] {
 }
 .app-side-nav,
 .app-bottom-nav {
-  background-color: rgb(255 253 250 / 82%) !important;
+  background-color: rgb(255 253 250 / 70%) !important;
   -webkit-backdrop-filter: blur(14px) saturate(115%);
   backdrop-filter: blur(14px) saturate(115%);
 }
@@ -73,7 +87,7 @@ html.dark { color-scheme: dark; }
 html.dark body, html.dark #root { background: #000 !important; color: #b8b8b8; }
 html.dark .app-shell { background: transparent !important; color: #b8b8b8; }
 html.dark .app-background-layer::after { background: rgb(0 0 0 / 72%); }
-html.dark .app-side-nav, html.dark .app-bottom-nav { background: rgb(24 24 24 / 84%) !important; border-color: #3a3a3a !important; }
+html.dark .app-side-nav, html.dark .app-bottom-nav { background: rgb(24 24 24 / 72%) !important; border-color: #3a3a3a !important; }
 html.dark .app-shell :where(.bg-white, .bg-white\/50, .bg-white\/90, .bg-white\/95, .bg-white\/96) { background-color: rgb(36 36 36 / 92%) !important; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 html.dark .bg-slate-50 { background-color: #2b2b2b !important; }
 html.dark .bg-slate-100 { background-color: #333 !important; }
