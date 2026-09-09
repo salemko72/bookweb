@@ -1,3 +1,3 @@
-export function WelcomeIllustration() { return <div className="overflow-visible"><img src="/welcome-login.png" alt="PomaaaloStay welcome screen preview" className="block h-auto w-full object-contain" /></div> }
+export function WelcomeIllustration() { return <div className="h-full w-full overflow-hidden"><img src="/welcome-login.png" alt="Mediterranean seaside agency backdrop" className="block h-full w-full object-cover object-center" /></div> }
 
 
