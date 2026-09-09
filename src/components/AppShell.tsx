@@ -21,14 +21,15 @@ export function AppShell({ children, role = 'viewer', agency = { id:'legacy', na
   ].filter((item) => canOpenPage(role, item.to))
   const initials = agency.name.split(/\s+/).filter(Boolean).slice(0,2).map((part)=>part[0]).join('').toUpperCase() || 'A'
 
-  return <div className="app-shell min-h-screen bg-[#f6f1e9] text-slate-900">
+  return <div className="app-shell min-h-screen text-slate-900">
+    <div className="app-background-layer" aria-hidden="true" />
     {desktop&&<aside className="app-side-nav fixed inset-y-0 left-0 z-40 flex w-[218px] flex-col border-r border-[#ded8cf] bg-[#fffdfa]/95 px-3 py-5 backdrop-blur">
-      <div className="px-3"><p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-violet-500">PomaaaloStay</p><p className="mt-1 truncate text-sm font-semibold text-[#18304f]">{agency.name}</p><p className="mt-0.5 text-[9px] uppercase tracking-wider text-slate-400">{role}</p></div>
+      <div className="px-3"><p className="text-[9px] font-semibold tracking-[0.16em] text-violet-500">PomaaaloDesk</p><p className="mt-1 truncate text-sm font-semibold text-[#18304f]">{agency.name}</p><p className="mt-0.5 text-[9px] uppercase tracking-wider text-slate-400">{role}</p></div>
       <nav className="mt-8 space-y-1">{navItems.map(({to,label,icon:Icon,primary})=><NavLink key={to} to={to} end={to==='/' } className={({isActive})=>['flex items-center gap-3 rounded-2xl px-3 py-3 text-xs font-semibold transition',primary?'mt-3 bg-violet-600 text-white shadow-md shadow-violet-100':isActive?'bg-violet-100 text-violet-700':'text-slate-500 hover:bg-slate-100 hover:text-slate-800'].join(' ')}><Icon size={primary?20:18} strokeWidth={primary?2.7:1.8}/><span>{label}</span></NavLink>)}</nav>
       <button onClick={onLogout} className="mt-auto flex items-center gap-3 rounded-2xl px-3 py-3 text-xs font-semibold text-slate-500 hover:bg-slate-100"><LogOut size={18}/>{t('logout')}</button>
     </aside>}
 
-    <main className="app-content relative min-h-screen pb-20 lg:ml-[218px] lg:pb-0">
+    <main className="app-content relative z-10 min-h-screen pb-20 lg:ml-[218px] lg:pb-0">
       <div className="agency-corner-mark fixed right-3 top-3 z-30 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-gradient-to-br from-violet-500 to-sky-400 text-sm font-semibold text-white shadow-[0_8px_28px_rgba(41,55,85,.18)] sm:right-5 sm:top-4 sm:h-[83px] sm:w-[83px] lg:right-7 lg:top-5 lg:h-[94px] lg:w-[94px]" title={agency.name} aria-label={agency.name}>{agency.logo_url?<img src={agency.logo_url} alt={agency.name} className="h-full w-full object-cover"/>:initials}</div>
       {children}
     </main>
