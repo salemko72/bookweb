@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, Building2, CalendarDays, Languages, Moon, Ruler, Save, SlidersHorizontal, Sun, UserRound, UsersRound } from 'lucide-react'
 import { getSettings, saveSettings, type AppSettings, type AppLanguage, type Appearance, type DateFormat, type MeasurementUnits } from '../lib/settings'
 import { useT } from '../lib/i18n'
-import { supabase } from '../lib/supabase'
 
 const adminItems = [
+  { path: '/agency', key: 'agency' as const, hint: 'agencyHint' as const, icon: Building2 },
   { path: '/properties', key: 'properties' as const, hint: 'propertiesHint' as const, icon: Building2 },
   { path: '/people', key: 'people' as const, hint: 'peopleHint' as const, icon: UsersRound },
   { path: '/calendar-sources', key: 'calendarSources' as const, hint: 'calendarSourcesHint' as const, icon: CalendarDays },
@@ -19,9 +19,6 @@ export function SettingsPage({ role = 'viewer' }: { role?: UserRole } = {}) {
   const navigate = useNavigate(); const t = useT(); const [settings, setSettings] = useState<AppSettings>(getSettings)
   useEffect(() => { saveSettings(settings) }, [settings])
   function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) { setSettings((current) => ({ ...current, [key]: value })) }
-  async function exportBackup(){const tables=['properties','reservations','profiles','guests','cleaning_tasks','availability_blocks']; const data:Record<string,unknown>={}; for(const table of tables){const {data:rows}=await supabase.from(table).select('*'); data[table]=rows??[]} const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),data},null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`bookweb-backup-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(a.href)}
-  async function importBackup(file?:File){if(!file)return; const parsed=JSON.parse(await file.text()); for(const [table,rows] of Object.entries(parsed.data??{})){if(Array.isArray(rows)&&rows.length) await supabase.from(table).upsert(rows)} window.location.reload()}
-  void exportBackup; void importBackup
   return <section className="mx-auto max-w-4xl p-3 pb-8 md:p-5">
     <header className="mb-5"><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">{t('preferences')}</p><h1 className="mt-1 text-[2.7rem] font-light sm:text-[3.4rem] tracking-tight">{t('settings')}</h1><p className="mt-1 text-xs text-slate-500">{t('settingsDescription')}</p></header>
     <div className="space-y-3">

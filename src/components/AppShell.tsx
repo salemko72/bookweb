@@ -1,27 +1,40 @@
 import { canOpenPage, type UserRole } from '../lib/permissions'
 import { NavLink } from 'react-router-dom'
-import { CalendarDays, Grid2X2, Home, Plus, Settings } from 'lucide-react'
+import { CalendarDays, Grid2X2, Home, List, LogOut, Plus, Settings } from 'lucide-react'
 import { useT } from '../lib/i18n'
+import type { AgencyMembership } from '../lib/agency-repository'
+import { useEffect, useState } from 'react'
 
-type AppShellProps = { children: React.ReactNode; role?: UserRole }
+type AppShellProps = { children: React.ReactNode; role?: UserRole; agency?: AgencyMembership; onLogout?: () => void }
 
-export function AppShell({ children, role = 'viewer' }: AppShellProps) {
+export function AppShell({ children, role = 'viewer', agency = { id:'legacy', name:'Jolie Agency', slug:'jolie-agency', logo_url:null, country:'', language:'hr', currency:'EUR', timezone:'Europe/Sarajevo', role, is_active:true }, onLogout = () => {} }: AppShellProps) {
   const t = useT()
+  const [desktop, setDesktop] = useState(() => typeof window.matchMedia === 'function' && window.matchMedia('(min-width: 1024px)').matches)
+  useEffect(() => { if(typeof window.matchMedia!=='function')return;const query=window.matchMedia('(min-width: 1024px)');const sync=()=>setDesktop(query.matches);query.addEventListener('change',sync);return()=>query.removeEventListener('change',sync) },[])
   const navItems = [
     { to: '/', label: t('home'), icon: Home },
-    { to: '/reservations', label: t('list'), icon: CalendarDays },
+    { to: '/reservations', label: t('list'), icon: List },
     { to: '/calendar', label: t('calendar'), icon: CalendarDays },
     { to: '/properties', label: t('properties'), icon: Grid2X2 },
     { to: '/new-booking', label: t('reservation'), icon: Plus, primary: true },
     { to: '/settings', label: t('settings'), icon: Settings },
-  ]
+  ].filter((item) => canOpenPage(role, item.to))
+  const initials = agency.name.split(/\s+/).filter(Boolean).slice(0,2).map((part)=>part[0]).join('').toUpperCase() || 'A'
 
   return <div className="app-shell min-h-screen bg-[#f6f1e9] text-slate-900">
-    <main className="pb-20">{children}</main>
-    <nav className="app-bottom-nav fixed bottom-0 left-0 right-0 z-40 border-t border-[#ddd6ca]/80 bg-[#fffdfa]/95 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-1 px-2 py-1.5 sm:justify-around sm:px-3">
-        {navItems.filter(item => canOpenPage(role, item.to)).map(({ to, label, icon: Icon, primary }) => <NavLink key={to} to={to} end={to === '/'} title={label} className={({ isActive }) => ['flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl border px-1.5 py-1.5 text-[10px] font-semibold transition sm:max-w-28 sm:px-3 sm:py-2 sm:text-[11px]', primary ? 'border-violet-700 bg-violet-600 text-white' : isActive ? 'border-violet-200 bg-violet-100 text-violet-700' : 'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white'].join(' ')}><Icon size={primary ? 22 : 18} strokeWidth={primary ? 2.8 : 1.8}/><span className="truncate">{label}</span></NavLink>)}
-      </div>
-    </nav>
+    {desktop&&<aside className="app-side-nav fixed inset-y-0 left-0 z-40 flex w-[218px] flex-col border-r border-[#ded8cf] bg-[#fffdfa]/95 px-3 py-5 backdrop-blur">
+      <div className="px-3"><p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-violet-500">PomaaaloStay</p><p className="mt-1 truncate text-sm font-semibold text-[#18304f]">{agency.name}</p><p className="mt-0.5 text-[9px] uppercase tracking-wider text-slate-400">{role}</p></div>
+      <nav className="mt-8 space-y-1">{navItems.map(({to,label,icon:Icon,primary})=><NavLink key={to} to={to} end={to==='/' } className={({isActive})=>['flex items-center gap-3 rounded-2xl px-3 py-3 text-xs font-semibold transition',primary?'mt-3 bg-violet-600 text-white shadow-md shadow-violet-100':isActive?'bg-violet-100 text-violet-700':'text-slate-500 hover:bg-slate-100 hover:text-slate-800'].join(' ')}><Icon size={primary?20:18} strokeWidth={primary?2.7:1.8}/><span>{label}</span></NavLink>)}</nav>
+      <button onClick={onLogout} className="mt-auto flex items-center gap-3 rounded-2xl px-3 py-3 text-xs font-semibold text-slate-500 hover:bg-slate-100"><LogOut size={18}/>{t('logout')}</button>
+    </aside>}
+
+    <main className="app-content relative min-h-screen pb-20 lg:ml-[218px] lg:pb-0">
+      <div className="agency-corner-mark fixed right-3 top-3 z-30 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-gradient-to-br from-violet-500 to-sky-400 text-sm font-semibold text-white shadow-[0_8px_28px_rgba(41,55,85,.18)] sm:right-5 sm:top-4 sm:h-16 sm:w-16 lg:right-7 lg:top-5 lg:h-[72px] lg:w-[72px]" title={agency.name} aria-label={agency.name}>{agency.logo_url?<img src={agency.logo_url} alt={agency.name} className="h-full w-full object-cover"/>:initials}</div>
+      {children}
+    </main>
+
+    {!desktop&&<nav className="app-bottom-nav fixed bottom-0 left-0 right-0 z-40 border-t border-[#ddd6ca]/80 bg-[#fffdfa]/95 backdrop-blur">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-1 px-2 py-1.5 sm:justify-around sm:px-3">{navItems.map(({to,label,icon:Icon,primary})=><NavLink key={to} to={to} end={to==='/' } title={label} className={({isActive})=>['flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-xl border px-1 py-1.5 text-[9px] font-semibold transition sm:max-w-28 sm:px-3 sm:py-2 sm:text-[10px]',primary?'border-violet-700 bg-violet-600 text-white':isActive?'border-violet-200 bg-violet-100 text-violet-700':'border-transparent text-slate-500 hover:border-slate-200 hover:bg-white'].join(' ')}><Icon size={primary?22:18} strokeWidth={primary?2.8:1.8}/><span className="max-w-full truncate">{label}</span></NavLink>)}</div>
+    </nav>}
   </div>
 }

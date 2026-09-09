@@ -7,6 +7,10 @@ export async function signInWithPassword(email: string, password: string) {
   })
 }
 
+export async function signUpOwner(email: string, password: string, fullName: string) {
+  return supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
+}
+
 export async function getCurrentSession() {
   const { data, error } = await supabase.auth.getSession()
 

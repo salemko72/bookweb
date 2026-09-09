@@ -6,6 +6,15 @@ body, #root { margin: 0; width: 100%; max-width: 100%; min-width: 0; overflow-x:
 button, input, select, textarea { font: inherit; }
 * { box-sizing: border-box; }
 .status-ribbon-label { writing-mode: vertical-rl; transform: rotate(180deg); }
+.welcome-input { width: 100%; border: 1px solid #e2e8f0; border-radius: .85rem; background: #fff; padding: .7rem .8rem; font-size: .875rem; font-weight: 400; outline: none; transition: border-color .15s, box-shadow .15s; }
+.welcome-input:focus { border-color: #8b5cf6; box-shadow: 0 0 0 4px rgb(139 92 246 / .08); }
+.welcome-field-icon { pointer-events: none; position: absolute; left: .8rem; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+.welcome-primary { display: flex; width: 100%; align-items: center; justify-content: center; gap: .6rem; border-radius: .9rem; background: #7c3aed; padding: .8rem 1rem; font-size: .8rem; font-weight: 600; color: white; transition: background .15s, opacity .15s; }
+.welcome-primary:hover { background: #6d28d9; }
+.welcome-primary:disabled { cursor: wait; opacity: .55; }
+.app-content > section > header:first-child { padding-right: 4.35rem; }
+@media (min-width: 640px) { .app-content > section > header:first-child { padding-right: 5.25rem; } }
+@media (min-width: 1024px) { .app-content > section > header:first-child { padding-right: 6rem; } }
 
 
 html.dark { color-scheme: dark; }

@@ -5,8 +5,8 @@ import { createUser as createAdminUser, deleteUser, inviteUser } from '../lib/ad
 import { getProfiles, getPropertyAccess, replacePropertyAccess, updateProfile } from '../lib/profiles-repository'
 import type { UserProfile, UserRole } from '../lib/permissions'
 
-const roles: UserRole[] = ['admin', 'manager', 'viewer', 'cleaning']
-const roleDescriptions: Record<UserRole, string> = { admin: 'Full administration and property access.', manager: 'Operational editing on assigned properties.', viewer: 'Read-only access to assigned properties.', cleaning: 'Cleaning information without guest details.' }
+const roles: UserRole[] = ['owner', 'admin', 'manager', 'viewer', 'cleaning']
+const roleDescriptions: Record<UserRole, string> = { owner: 'Agency ownership, full administration and property access.', admin: 'Full administration and property access.', manager: 'Operational editing on assigned properties.', viewer: 'Read-only access to assigned properties.', cleaning: 'Cleaning information without guest details.' }
 
 type NewUserForm = { email: string; full_name: string; role: UserRole; property_ids: string[] }
 const emptyNewUser: NewUserForm = { email: '', full_name: '', role: 'viewer', property_ids: [] }
@@ -77,7 +77,7 @@ export function PeoplePage() {
   }
 
   async function removeUser(person: UserProfile) {
-    if (person.role === 'admin' && people.filter((item) => item.role === 'admin').length <= 1) { setError('Keep at least one admin account.'); return }
+    if (person.role === 'owner' && people.filter((item) => item.role === 'owner' && item.is_active).length <= 1) { setError('Keep at least one active owner.'); return }
     if (!window.confirm(`Delete user ${person.full_name || person.email}?`)) return
     setSaving(true); setError(null); setMessage(null)
     try { await deleteUser(person.id); if (selected?.id === person.id) { setSelected(null); setAccess([]) }; await load(); setMessage('User deleted.') }

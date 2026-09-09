@@ -22,8 +22,8 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const nextEmailError = !email.trim() ? 'Email is required.' : null
-    const nextPasswordError = !password ? 'Password is required.' : null
+    const nextEmailError = !email.trim() ? t('emailRequired') : null
+    const nextPasswordError = !password ? t('passwordRequired') : null
 
     setEmailError(nextEmailError)
     setPasswordError(nextPasswordError)
@@ -53,7 +53,7 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
     setEmailError(null)
 
     if (!email.trim()) {
-      setEmailError('Enter your email first.')
+      setEmailError(t('enterEmailFirst'))
       return
     }
 
@@ -66,7 +66,7 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
       return
     }
 
-    setResetMessage('Password reset email sent.')
+    setResetMessage(t('resetEmailSent'))
   }
 
   return (
@@ -102,12 +102,12 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            placeholder="Enter your password"
+            placeholder={t('enterPassword')}
             className="w-full rounded-2xl border border-slate-200 bg-white py-3.5 pl-11 pr-12 text-sm outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-50"
           />
           <button
             type="button"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            aria-label={showPassword ? t('hidePassword') : t('showPassword')}
             onClick={() => setShowPassword((current) => !current)}
             className="absolute right-3.5 top-[3.1rem] -translate-y-1/2 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
           >
@@ -120,10 +120,10 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
       <div className="flex items-center justify-between gap-3 text-xs">
         <label className="flex items-center gap-2 text-slate-500">
           <input type="checkbox" defaultChecked className="h-4 w-4 rounded border-slate-300 accent-sky-500" />
-          Remember me
+          {t('rememberMe')}
         </label>
         <button type="button" onClick={() => void handleForgotPassword()} disabled={resetting} className="font-semibold text-sky-600 hover:text-sky-700">
-          {resetting ? 'Sending…' : 'Forgot password?'}
+          {resetting ? t('sending') : t('forgotPassword')}
         </button>
       </div>
 
@@ -135,7 +135,7 @@ export function LoginForm({ onAuthenticated }: LoginFormProps) {
         disabled={submitting}
         className="flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-500 px-4 py-3.5 text-sm font-semibold text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitting ? 'Signing in…' : 'Sign in'}
+        {submitting ? t('signingIn') : t('signIn')}
         {!submitting && <span aria-hidden>→</span>}
       </button>
     </form>

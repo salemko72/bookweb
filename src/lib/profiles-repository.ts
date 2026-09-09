@@ -2,10 +2,7 @@ import { supabase } from './supabase'
 import type { UserProfile, UserRole } from './permissions'
 
 export async function getProfiles(): Promise<UserProfile[]> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id,email,full_name,role,is_active')
-    .order('full_name', { ascending: true, nullsFirst: false })
+  const { data, error } = await supabase.rpc('get_agency_members')
   if (error) throw error
   return data ?? []
 }
@@ -25,14 +22,21 @@ export async function updateProfile(
   id: string,
   changes: Partial<Pick<UserProfile, 'full_name' | 'role' | 'is_active'>>,
 ): Promise<UserProfile> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(changes)
-    .eq('id', id)
-    .select('id,email,full_name,role,is_active')
-    .single()
-  if (error) throw error
-  return data
+  if (changes.role !== undefined || changes.is_active !== undefined) {
+    const current = await getProfile(id)
+    const { error } = await supabase.rpc('update_agency_member', {
+      p_user_id: id,
+      p_role: changes.role ?? current.role,
+      p_is_active: changes.is_active ?? current.is_active,
+    })
+    if (error) throw error
+  }
+  if (changes.full_name !== undefined) {
+    const { error } = await supabase.from('profiles').update({ full_name: changes.full_name }).eq('id', id)
+    if (error) throw error
+  }
+  const updated = await getProfile(id)
+  return { ...updated, role: changes.role ?? updated.role, is_active: changes.is_active ?? updated.is_active }
 }
 
 export async function getPropertyAccess(userId: string): Promise<string[]> {
