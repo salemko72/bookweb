@@ -1,4 +1,6 @@
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024
+// Images are stored as Base64 text in the property row. Keep the complete
+// request comfortably below gateway limits, including JSON overhead.
+const MAX_IMAGE_PAYLOAD_BYTES = 900 * 1024
 const MAX_IMAGE_DIMENSION = 1600
 const QUALITY_STEPS = [0.82, 0.72, 0.62, 0.52, 0.42]
 
@@ -16,9 +18,10 @@ function readFileAsDataUrl(file: File): Promise<string> {
   })
 }
 
-function dataUrlBytes(dataUrl: string): number {
-  const base64 = dataUrl.split(',')[1] ?? ''
-  return Math.ceil((base64.length * 3) / 4) - (base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0)
+function dataUrlPayloadBytes(dataUrl: string): number {
+  // A data URL contains ASCII only, so its string length is its UTF-8 payload
+  // size. Measuring decoded image bytes would under-count Base64 by ~33%.
+  return dataUrl.length
 }
 
 async function compressImage(dataUrl: string): Promise<string> {
@@ -50,11 +53,11 @@ async function compressImage(dataUrl: string): Promise<string> {
     for (const quality of QUALITY_STEPS) {
       const webp = canvas.toDataURL('image/webp', quality)
       const candidate = webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/jpeg', quality)
-      if (dataUrlBytes(candidate) <= MAX_IMAGE_BYTES) return candidate
+      if (dataUrlPayloadBytes(candidate) <= MAX_IMAGE_PAYLOAD_BYTES) return candidate
     }
   }
 
-  throw new Error('Image could not be reduced below 2 MB. Please choose a smaller photo.')
+  throw new Error('Image could not be reduced to a safe upload size. Please choose a smaller photo.')
 }
 
 export async function readImageFile(file: File): Promise<string> {
@@ -64,5 +67,5 @@ export async function readImageFile(file: File): Promise<string> {
   // The database receives the Base64 data URL, which is roughly one third
   // larger than the original file. Check the actual payload rather than the
   // source file size so a 1.8 MB phone photo cannot exceed the 2 MB limit.
-  return dataUrlBytes(dataUrl) <= MAX_IMAGE_BYTES ? dataUrl : compressImage(dataUrl)
+  return dataUrlPayloadBytes(dataUrl) <= MAX_IMAGE_PAYLOAD_BYTES ? dataUrl : compressImage(dataUrl)
 }

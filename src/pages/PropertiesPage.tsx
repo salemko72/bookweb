@@ -25,6 +25,15 @@ type CalendarLinkDraft = { source: ExternalCalendarRecord['source']; feed_url: s
 
 function mapEmbedUrl(latitude: number, longitude: number) { const d = 0.004; return `https://www.openstreetmap.org/export/embed.html?bbox=${longitude-d}%2C${latitude-d}%2C${longitude+d}%2C${latitude+d}&layer=mapnik&marker=${latitude}%2C${longitude}` }
 function sourceName(source: ExternalCalendarRecord['source']) { return source === 'airbnb_ical' ? 'Airbnb' : source === 'booking_ical' ? 'Booking.com' : 'Other' }
+function saveErrorMessage(reason: unknown) {
+  if (reason instanceof Error) return reason.message
+  if (reason && typeof reason === 'object') {
+    const value = reason as Record<string, unknown>
+    return [value.code && `[${String(value.code)}]`, value.message, value.details, value.hint]
+      .filter(Boolean).map(String).join(' · ')
+  }
+  return String(reason || '')
+}
 
 export function PropertiesPage({ role = 'viewer' }: { role?: UserRole } = {}) {
   const t = useT()
@@ -74,7 +83,8 @@ export function PropertiesPage({ role = 'viewer' }: { role?: UserRole } = {}) {
         await load();closeEditor();setMessage('Property created.')
       }
     }catch(reason){
-      const detail = reason instanceof Error && reason.message ? ` ${reason.message}` : ''
+      const message = saveErrorMessage(reason)
+      const detail = message ? ` ${message}` : ''
       setError(`Unable to save property.${detail}`)
     }finally{setSaving(false)}
   }
