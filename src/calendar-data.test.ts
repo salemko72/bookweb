@@ -35,8 +35,8 @@ describe('calendar data', () => {
         '2026-09-10',
       ),
     ).toEqual({
-      start: 2,
-      end: 5,
+      start: 2.5,
+      end: 5.5,
       span: 3,
     })
   })
@@ -83,9 +83,33 @@ describe('calendar data', () => {
     expect(
       layoutReservations(reservations, '2026-09-01', '2026-09-10'),
     ).toEqual([
-      { id: 'r1', lane: 0, start: 0, end: 4, span: 4 },
-      { id: 'r2', lane: 1, start: 2, end: 6, span: 4 },
-      { id: 'r3', lane: 0, start: 6, end: 8, span: 2 },
+      { id: 'r1', lane: 0, start: 0.5, end: 4.5, span: 4 },
+      { id: 'r2', lane: 1, start: 2.5, end: 6.5, span: 4 },
+      { id: 'r3', lane: 0, start: 6.5, end: 8.5, span: 2 },
+    ])
+  })
+
+  it('places same-day checkout and check-in together in one date column', () => {
+    const reservations: CalendarReservation[] = [
+      {
+        id: 'departing',
+        property_id: 'p1',
+        check_in: '2026-09-10T14:00:00+02:00',
+        check_out: '2026-09-13T10:00:00+02:00',
+        status: 'confirmed',
+      },
+      {
+        id: 'arriving',
+        property_id: 'p1',
+        check_in: '2026-09-13T14:00:00+02:00',
+        check_out: '2026-09-16T10:00:00+02:00',
+        status: 'confirmed',
+      },
+    ]
+
+    expect(layoutReservations(reservations, '2026-09-09', '2026-09-18')).toEqual([
+      { id: 'departing', lane: 0, start: 1.5, end: 4.5, span: 3 },
+      { id: 'arriving', lane: 0, start: 4.5, end: 7.5, span: 3 },
     ])
   })
 
@@ -109,8 +133,8 @@ describe('calendar data', () => {
         '2026-09-10',
       ),
     ).toEqual({
-      start: 1,
-      end: 7,
+      start: 1.5,
+      end: 7.5,
       span: 6,
     })
   })

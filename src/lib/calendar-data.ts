@@ -52,15 +52,18 @@ export function getReservationPosition(
   const checkIn = parseISO(reservation.check_in)
   const checkOut = parseISO(reservation.check_out)
 
-  const visibleStart = checkIn < rangeStart ? rangeStart : checkIn
-  const visibleEnd = checkOut > rangeEnd ? rangeEnd : checkOut
+  // A stay starts and ends around the middle of its arrival/departure day.
+  // This lets a checkout and the next check-in share the same date column,
+  // matching the usual accommodation turnover model.
+  const visibleDayCount = differenceInCalendarDays(rangeEnd, rangeStart) + 1
+  const rawStart = differenceInCalendarDays(checkIn, rangeStart) + 0.5
+  const rawEnd = differenceInCalendarDays(checkOut, rangeStart) + 0.5
+  const startIndex = Math.max(0, rawStart)
+  const endIndex = Math.min(visibleDayCount, rawEnd)
 
-  if (visibleStart >= visibleEnd) {
+  if (startIndex >= endIndex) {
     return null
   }
-
-  const startIndex = differenceInCalendarDays(visibleStart, rangeStart)
-  const endIndex = differenceInCalendarDays(visibleEnd, rangeStart)
   const span = endIndex - startIndex
 
   return {
