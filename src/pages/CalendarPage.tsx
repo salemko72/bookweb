@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, EllipsisVertical, GripVertical, Minus, Plus } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AgencyTitleMark } from '../components/AgencyTitleMark'
+import { NightCountBadge } from '../components/NightCountBadge'
 import { buildCalendarDays, layoutReservations, type CalendarReservation } from '../lib/calendar-data'
 import { getProperties, type Property } from '../lib/properties-repository'
 import { getReservation, getReservations, updateReservationDates, type Reservation } from '../lib/reservations-repository'
@@ -226,6 +227,7 @@ export function CalendarPage({ role = 'viewer' }: { role?: UserRole } = {}) {
                   <div onDoubleClick={() => navigate(isBlock ? '/blocks' : `/edit-reservation/${reservation.id}`)} data-testid={`reservation-body-${reservation.id}`} className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 overflow-hidden px-1.5" style={{height:BAR_HEIGHT, backgroundImage:`linear-gradient(135deg, ${bg} 0%, ${bg}CC 100%)`, color:text}} title={`${reservation.guest_name} · ${formatDateRange(reservation.check_in, reservation.check_out)}`}>
                     <span data-testid={`reservation-source-badge-${reservation.id}`} title={badge.name} className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/20 text-[9px] font-bold">{badge.label}</span>
                     <div className="min-w-0 flex-1 overflow-hidden"><p className="truncate text-[12px] font-bold leading-none tracking-[-0.01em]">{blockConflict ? '⚠ ' : ''}{reservation.guest_name}</p><p className="mt-1 truncate text-[7px] font-medium leading-none opacity-90">{formatTimelineDateRange(reservation.check_in, reservation.check_out)}</p></div>
+                    {!isBlock && <NightCountBadge start={reservation.check_in} end={reservation.check_out} compact />}
                   </div>
                   <button type="button" disabled={!canEditReservation(role) || imported || savingReservationId === reservation.id} title={imported ? t('importedReadOnly') : t('resizeEnd')} aria-label={t('resizeEnd')} onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); if (!canEditReservation(role) || imported) return; setResizeMessage(null); setResizing({id:reservation.id,isBlock,propertyId:reservation.property_id,side:'end',initialX:e.clientX,initialCheckIn:reservation.check_in,initialCheckOut:reservation.check_out}) }} data-testid="reservation-resize-end" className={['z-20 flex w-4 shrink-0 touch-none select-none items-center justify-center transition-colors', imported ? 'cursor-default opacity-65' : 'cursor-ew-resize'].join(' ')} style={{backgroundColor:bg}}><EllipsisVertical size={12} strokeWidth={2.3} color={text}/></button>
                 </div>

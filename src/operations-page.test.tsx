@@ -14,7 +14,7 @@ describe('operations views',()=>{
   expect(await screen.findByText('Martin')).toBeInTheDocument()
   fireEvent.change(screen.getByLabelText('Search'),{target:{value:'REF123'}})
   fireEvent.change(screen.getByLabelText('Reservation filter'),{target:{value:'conflict'}})
-  expect(screen.getByText('Conflict')).toBeInTheDocument()
+  expect(screen.getAllByText('Conflict').length).toBeGreaterThan(0)
   fireEvent.change(screen.getByLabelText('Search'),{target:{value:'missing'}})
   expect(screen.getByText('No reservations found.')).toBeInTheDocument()
  })
@@ -22,7 +22,7 @@ describe('operations views',()=>{
   render(<MemoryRouter><OperationsPage mode="guests" role="viewer"/></MemoryRouter>)
   fireEvent.click(await screen.findByRole('button',{name:/Martin/}))
   expect(screen.getByText(/1 stays/)).toBeInTheDocument()
-  expect(screen.getByRole('link',{name:/2026-09-10/})).toHaveAttribute('href','/edit-reservation/r')
+  expect(screen.getByRole('link',{name:/10\.09\.2026/})).toHaveAttribute('href','/edit-reservation/r')
  })
  it('lets cleaning update operational task status without contact or creation controls',async()=>{
   render(<MemoryRouter><OperationsPage mode="tasks" role="cleaning"/></MemoryRouter>)

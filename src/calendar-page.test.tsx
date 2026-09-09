@@ -75,6 +75,7 @@ describe('CalendarPage', () => {
     expect(await screen.findByText('Demo Guest')).toBeInTheDocument()
     expect(await screen.findByTestId('reservation-source-badge-r1')).toHaveTextContent('S')
     expect(await screen.findByText('10.09. - 15.09.2026')).toBeInTheDocument()
+    expect(await screen.findAllByLabelText('5 nights')).not.toHaveLength(0)
   })
 
   it('defaults the timeline to 100% while keeping the dense legacy day width', async () => {

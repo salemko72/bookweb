@@ -1,14 +1,11 @@
 import { supabase } from './supabase'
+export { stayNights, stayTotal } from './stay-calculations'
 
 export const blockReasons = ['Owner stay', 'Maintenance', 'Problem', 'Renovation', 'Not available', 'Other'] as const
 export const taskKinds = ['Cleaning', 'Maintenance', 'Inspection', 'Linen', 'Repair', 'Delivery', 'Supplies', 'Other'] as const
 export type AvailabilityBlock = { id: string; property_id: string; start_date: string; end_date: string; reason: string; notes: string }
 export type Guest = { id: string; name: string; email: string; phone: string; language: string; country: string; notes: string }
 export type Task = { id: string; property_id: string; kind: string; title: string; start_time: string; end_time: string; status: string }
-export function stayNights(start: string, end: string) {
-  return Math.max(0, Math.round((Date.parse(end.slice(0, 10)) - Date.parse(start.slice(0, 10))) / 86400000)) || 0
-}
-export function stayTotal(start: string, end: string, rate: number) { return Math.round(stayNights(start, end) * rate * 100) / 100 }
 export function overlapsBlock(block: AvailabilityBlock, property: string, start: string, end: string) {
   return block.property_id === property && start.slice(0, 10) < block.end_date && end.slice(0, 10) > block.start_date
 }

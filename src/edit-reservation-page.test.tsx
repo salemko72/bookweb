@@ -24,8 +24,9 @@ describe('EditReservationPage',()=>{
   it('shows reservation details without mutation controls to a viewer', async()=>{
     render(<MemoryRouter initialEntries={['/edit-reservation/r1']}><Routes><Route path="/edit-reservation/:id" element={<EditReservationPage role="viewer"/>}/></Routes></MemoryRouter>)
     expect(await screen.findByText('Reservation details')).toBeInTheDocument()
+    expect(screen.getByText('5 nights')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Demo Guest')).toBeDisabled()
-    expect(screen.getByLabelText('Property')).toBeDisabled()
+    expect(screen.getByLabelText('Properties')).toBeDisabled()
     expect(screen.queryByRole('button',{name:/save changes/i})).not.toBeInTheDocument()
     expect(updateReservation).not.toHaveBeenCalled()
   })
@@ -49,7 +50,7 @@ describe('EditReservationPage property move',()=>{
   it('allows moving a reservation to another property', async()=>{
     render(<MemoryRouter initialEntries={['/edit-reservation/r1']}><Routes><Route path="/edit-reservation/:id" element={<EditReservationPage role="admin"/>}/></Routes></MemoryRouter>)
     await screen.findByText('Edit reservation')
-    fireEvent.change(screen.getByLabelText('Property'),{target:{value:'p2'}})
+    fireEvent.change(screen.getByLabelText('Properties'),{target:{value:'p2'}})
     fireEvent.click(screen.getByRole('button',{name:/save changes/i}))
     await waitFor(()=>expect(updateReservation).toHaveBeenCalledWith('r1', expect.objectContaining({property_id:'p2'})))
   })

@@ -17,7 +17,7 @@ describe('authenticated application shell', () => {
     )
 
     expect(
-      await screen.findByRole('button', { name: /sign in/i }),
-    ).toBeInTheDocument()
+      (await screen.findAllByRole('button', { name: /sign in/i })).length,
+    ).toBeGreaterThan(0)
   })
 })

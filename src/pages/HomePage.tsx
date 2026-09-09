@@ -10,6 +10,7 @@ import { signOut, getCurrentSession } from '../lib/auth-supabase'
 import { useT } from '../lib/i18n'
 import { getProfile } from '../lib/profiles-repository'
 import { getSettings } from '../lib/settings'
+import { stayNights } from '../lib/stay-calculations'
 
 type HomePageProps = { onLogout?: () => void }
 type HomeEvent = { id: string; reservationId?: string; kind: 'arrival' | 'departure' | 'cleaning'; time: string; propertyId: string; guestName?: string; guests?: number; nights?: number; status: string }
@@ -31,13 +32,10 @@ function addDays(value: string, amount: number) {
 function timeLabel(value: string, language: 'en' | 'hr') {
   return new Intl.DateTimeFormat(language === 'hr' ? 'hr-HR' : 'en-GB', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
-function nightsBetween(checkIn: string, checkOut: string) {
-  return Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000))
-}
 function buildEvents(summary: DailyOperationalSummary): HomeEvent[] {
   return [
-    ...summary.checkIns.map((reservation) => ({ id: `arrival-${reservation.id}`, reservationId: reservation.id, kind: 'arrival' as const, time: reservation.check_in, propertyId: reservation.property_id, guestName: reservation.guest_name, guests: reservation.guests, nights: nightsBetween(reservation.check_in, reservation.check_out), status: 'Arriving' })),
-    ...summary.checkOuts.map((reservation) => ({ id: `departure-${reservation.id}`, reservationId: reservation.id, kind: 'departure' as const, time: reservation.check_out, propertyId: reservation.property_id, guestName: reservation.guest_name, guests: reservation.guests, nights: nightsBetween(reservation.check_in, reservation.check_out), status: 'Departing' })),
+    ...summary.checkIns.map((reservation) => ({ id: `arrival-${reservation.id}`, reservationId: reservation.id, kind: 'arrival' as const, time: reservation.check_in, propertyId: reservation.property_id, guestName: reservation.guest_name, guests: reservation.guests, nights: stayNights(reservation.check_in, reservation.check_out), status: 'Arriving' })),
+    ...summary.checkOuts.map((reservation) => ({ id: `departure-${reservation.id}`, reservationId: reservation.id, kind: 'departure' as const, time: reservation.check_out, propertyId: reservation.property_id, guestName: reservation.guest_name, guests: reservation.guests, nights: stayNights(reservation.check_in, reservation.check_out), status: 'Departing' })),
     ...summary.cleanings.map((cleaning) => ({ id: `cleaning-${cleaning.id}`, kind: 'cleaning' as const, time: cleaning.start_time, propertyId: cleaning.property_id, status: 'Cleaning' })),
   ].sort((a, b) => a.time.localeCompare(b.time))
 }

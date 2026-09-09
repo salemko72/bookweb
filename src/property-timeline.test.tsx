@@ -18,6 +18,7 @@ describe('PropertyTimeline',()=>{
     render(<MemoryRouter><PropertyTimeline property={property} reservations={[reservation]}/></MemoryRouter>)
     expect(screen.getByTestId('property-mini-timeline')).toHaveTextContent('Next 30 days')
     expect(screen.getByTitle(/Demo/)).toBeInTheDocument()
+    expect(screen.getByLabelText('5 nights')).toHaveTextContent('5N')
   })
 
   it('can open the reservation editor on double click',()=>{

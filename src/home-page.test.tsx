@@ -22,7 +22,7 @@ describe('HomePage', () => {
   it('shows daily overview with three square action cards and today/tomorrow columns', async () => {
     render(<MemoryRouter><HomePage /></MemoryRouter>)
     expect(await screen.findByRole('heading', { name: /daily overview/i })).toBeInTheDocument()
-    expect(screen.getByText(/good morning, kate/i)).toBeInTheDocument()
+    expect(screen.getByText(/good morning, there/i)).toBeInTheDocument()
     expect(screen.getByTestId('home-summary-grid')).toHaveClass('grid-cols-3')
     expect(screen.getAllByTestId('home-summary-card')).toHaveLength(3)
     expect(screen.getAllByTestId('home-summary-card').every((card) => card.className.includes('aspect-square'))).toBe(true)

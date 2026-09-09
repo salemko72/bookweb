@@ -29,6 +29,15 @@ button, input, select, textarea { font: inherit; }
 }
 .agency-title-mark > img { width: 100%; height: 100%; object-fit: cover; }
 .agency-title-initials { font-size: .24em; font-weight: 600; line-height: 1; letter-spacing: 0; }
+.app-content h1 {
+  font-size: 2.938rem !important;
+  font-weight: 300 !important;
+  line-height: .95 !important;
+  letter-spacing: -.025em !important;
+}
+@media (min-width: 640px) {
+  .app-content h1 { font-size: 3.7rem !important; }
+}
 
 /* The image lives in its own viewport-fixed layer so iOS Safari never scrolls it
    with the document, unlike background-attachment: fixed. */
