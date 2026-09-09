@@ -83,10 +83,12 @@ begin
     return result;
   end if;
 
-  select min(agency_id) into result
+  select case
+    when count(*) = 1 then (array_agg(agency_id))[1]
+    else null
+  end into result
   from public.agency_memberships
-  where user_id = auth.uid() and is_active = true
-  having count(*) = 1;
+  where user_id = auth.uid() and is_active = true;
   return result;
 end;
 $$;
@@ -320,9 +322,28 @@ using (public.current_user_role() in ('owner','admin') and public.has_property_a
 with check (public.current_user_role() in ('owner','admin') and public.has_property_access(property_id));
 
 create policy properties_select on public.properties for select to authenticated
-using (public.current_user_role() in ('owner','admin','manager','viewer') and public.has_property_access(id));
+using (
+  agency_id = public.requested_agency_id()
+  and (
+    public.current_user_role() in ('owner','admin')
+    or (
+      public.current_user_role() in ('manager','viewer')
+      and public.has_property_access(id)
+    )
+  )
+);
 create policy properties_insert on public.properties for insert to authenticated
-with check (agency_id=public.requested_agency_id() and public.current_user_role() in ('owner','admin'));
+with check (
+  (select auth.uid()) is not null
+  and exists (
+    select 1
+    from public.agency_memberships membership
+    where membership.agency_id = properties.agency_id
+      and membership.user_id = (select auth.uid())
+      and membership.is_active = true
+      and membership.role in ('owner','admin')
+  )
+);
 create policy properties_update on public.properties for update to authenticated
 using (public.can_operate_property(id)) with check (agency_id=public.requested_agency_id() and public.can_operate_property(id));
 create policy properties_delete on public.properties for delete to authenticated

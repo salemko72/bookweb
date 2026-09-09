@@ -5,6 +5,20 @@ html { font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif; width: 1
 body, #root { margin: 0; width: 100%; max-width: 100%; min-width: 0; overflow-x: hidden; background: transparent; color: #18304f; }
 button, input, select, textarea { font: inherit; }
 * { box-sizing: border-box; }
+
+/* iOS Safari automatically zooms focused form controls whose computed text is
+   smaller than 16px. Keep controls at the native threshold on touch screens;
+   this prevents focus zoom without disabling the user's pinch-to-zoom. */
+@supports (-webkit-touch-callout: none) {
+  @media (hover: none) and (pointer: coarse) {
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']),
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+}
+
 .status-ribbon-label { writing-mode: vertical-rl; transform: rotate(180deg); }
 .welcome-input { width: 100%; border: 1px solid #e2e8f0; border-radius: .85rem; background: #fff; padding: .7rem .8rem; font-size: .875rem; font-weight: 400; outline: none; transition: border-color .15s, box-shadow .15s; }
 .welcome-input:focus { border-color: #8b5cf6; box-shadow: 0 0 0 4px rgb(139 92 246 / .08); }
