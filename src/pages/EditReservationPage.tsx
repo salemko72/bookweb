@@ -131,7 +131,7 @@ export function EditReservationPage({ role = 'viewer' }: { role?: UserRole } = {
     {error && <div role="alert" className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-xs font-medium text-rose-700">{error}</div>}
     {message && <div role="status" className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-700">{message}</div>}
 
-    <section className="rounded-[1.35rem] bg-white p-4">
+    <section className="relative z-30 rounded-[1.35rem] bg-white p-4">
       <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-sm font-semibold"><CalendarDays size={17} className="text-violet-500"/>{t('stay')}</div><NightCountBadge start={checkIn} end={checkOut} /></div>
       <label className="mt-3 block text-[11px] font-semibold text-slate-600">{t('properties')}
         <select disabled={readOnly} aria-label={t('properties')} value={selectedPropertyId} onChange={(e) => setSelectedPropertyId(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal">
@@ -144,12 +144,12 @@ export function EditReservationPage({ role = 'viewer' }: { role?: UserRole } = {
       </div>
     </section>
 
-    <section className="mt-3 rounded-[1.35rem] bg-white p-4">
+    <section className="relative z-20 mt-3 rounded-[1.35rem] bg-white p-4">
       <div className="flex items-center gap-2 text-sm font-semibold"><UserRound size={17} className="text-violet-500"/>{t('guest')}</div>
       <StayExtras embedded value={extras} onChange={setExtras} start={checkIn} end={checkOut} guestName={guestName} source={source} onSourceChange={setSource} onGuestName={setGuestName} disabled={!canEditReservation(role)||!contactReady}/>
     </section>
 
-    <section className="mt-3 rounded-[1.35rem] bg-white p-4"><div className="flex items-center gap-2 text-sm font-semibold"><FileText size={17} className="text-violet-500"/>{t('notes')}</div><textarea disabled={readOnly} rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-400"/></section>
+    <section className="relative z-10 mt-3 rounded-[1.35rem] bg-white p-4"><div className="flex items-center gap-2 text-sm font-semibold"><FileText size={17} className="text-violet-500"/>{t('notes')}</div><textarea disabled={readOnly} rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} className="mt-2 w-full resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-violet-400"/></section>
 
     {imported && <p className="mt-2 text-[10px] text-slate-400">{t('importedReservationHint',{source:reservation.source === 'airbnb' ? 'Airbnb' : 'Booking.com'})}</p>}
 
