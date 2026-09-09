@@ -12,9 +12,9 @@ button, input, select, textarea { font: inherit; }
 .welcome-primary { display: flex; width: 100%; align-items: center; justify-content: center; gap: .6rem; border-radius: .9rem; background: #7c3aed; padding: .8rem 1rem; font-size: .8rem; font-weight: 600; color: white; transition: background .15s, opacity .15s; }
 .welcome-primary:hover { background: #6d28d9; }
 .welcome-primary:disabled { cursor: wait; opacity: .55; }
-.app-content > section > header:first-child { padding-right: 4.35rem; }
-@media (min-width: 640px) { .app-content > section > header:first-child { padding-right: 5.25rem; } }
-@media (min-width: 1024px) { .app-content > section > header:first-child { padding-right: 6rem; } }
+.app-content > section > header:first-child { padding-right: 6.5rem; }
+@media (min-width: 640px) { .app-content > section > header:first-child { padding-right: 7.5rem; } }
+@media (min-width: 1024px) { .app-content > section > header:first-child { padding-right: 8.5rem; } }
 
 
 html.dark { color-scheme: dark; }

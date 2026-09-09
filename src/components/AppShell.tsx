@@ -29,7 +29,7 @@ export function AppShell({ children, role = 'viewer', agency = { id:'legacy', na
     </aside>}
 
     <main className="app-content relative min-h-screen pb-20 lg:ml-[218px] lg:pb-0">
-      <div className="agency-corner-mark fixed right-3 top-3 z-30 flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-gradient-to-br from-violet-500 to-sky-400 text-sm font-semibold text-white shadow-[0_8px_28px_rgba(41,55,85,.18)] sm:right-5 sm:top-4 sm:h-16 sm:w-16 lg:right-7 lg:top-5 lg:h-[72px] lg:w-[72px]" title={agency.name} aria-label={agency.name}>{agency.logo_url?<img src={agency.logo_url} alt={agency.name} className="h-full w-full object-cover"/>:initials}</div>
+      <div className="agency-corner-mark fixed right-3 top-3 z-30 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-full border-[3px] border-white bg-gradient-to-br from-violet-500 to-sky-400 text-sm font-semibold text-white shadow-[0_8px_28px_rgba(41,55,85,.18)] sm:right-5 sm:top-4 sm:h-[83px] sm:w-[83px] lg:right-7 lg:top-5 lg:h-[94px] lg:w-[94px]" title={agency.name} aria-label={agency.name}>{agency.logo_url?<img src={agency.logo_url} alt={agency.name} className="h-full w-full object-cover"/>:initials}</div>
       {children}
     </main>
 
