@@ -61,5 +61,8 @@ export async function readImageFile(file: File): Promise<string> {
   const validationError = validateImageFile(file)
   if (validationError) return Promise.reject(new Error(validationError))
   const dataUrl = await readFileAsDataUrl(file)
-  return file.size <= MAX_IMAGE_BYTES ? dataUrl : compressImage(dataUrl)
+  // The database receives the Base64 data URL, which is roughly one third
+  // larger than the original file. Check the actual payload rather than the
+  // source file size so a 1.8 MB phone photo cannot exceed the 2 MB limit.
+  return dataUrlBytes(dataUrl) <= MAX_IMAGE_BYTES ? dataUrl : compressImage(dataUrl)
 }

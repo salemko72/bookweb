@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getActiveAgencyId } from './agency-session'
 
 export type Property = {
   id: string
@@ -47,7 +48,12 @@ export async function getAllProperties(): Promise<Property[]> {
 }
 
 export async function createProperty(property: CreatePropertyInput): Promise<Property> {
-  const { data, error } = await supabase.from('properties').insert(property).select().single()
+  // Send the active agency explicitly. The database has a default for this
+  // column, but an explicit value keeps inserts reliable when the request
+  // header is unavailable or a session has more than one agency.
+  const agencyId = getActiveAgencyId()
+  const payload = agencyId ? { ...property, agency_id: agencyId } : property
+  const { data, error } = await supabase.from('properties').insert(payload).select().single()
   if (error) throw error
   return data
 }

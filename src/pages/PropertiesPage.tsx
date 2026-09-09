@@ -73,7 +73,10 @@ export function PropertiesPage({ role = 'viewer' }: { role?: UserRole } = {}) {
         for(const link of draftLinks){await createExternalCalendar({property_id:created.id,source:link.source,feed_url:link.feed_url,is_active:true,last_synced_at:null,sync_status:'idle'})}
         await load();closeEditor();setMessage('Property created.')
       }
-    }catch{setError('Unable to save property. The property may have been saved; please check the list and edit it if needed.')}finally{setSaving(false)}
+    }catch(reason){
+      const detail = reason instanceof Error && reason.message ? ` ${reason.message}` : ''
+      setError(`Unable to save property.${detail}`)
+    }finally{setSaving(false)}
   }
 
   async function reactivate(){if(!editingId)return;setSaving(true);try{await updateProperty(editingId,{is_active:true});closeEditor();await load()}catch{setError(t('propertyActionFailed'))}finally{setSaving(false)}}
