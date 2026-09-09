@@ -5,6 +5,7 @@ export type Property = {
   id: string
   name: string
   address?: string | null
+  country?: string | null
   color?: string | null
   latitude?: number | null
   longitude?: number | null

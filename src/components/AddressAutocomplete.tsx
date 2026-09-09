@@ -6,6 +6,7 @@ import { useT } from '../lib/i18n'
 export type AddressValue = {
   address: string
   city: string
+  country: string
   latitude: number | null
   longitude: number | null
 }
@@ -50,7 +51,7 @@ export function AddressAutocomplete({ value, onChange }: Props) {
     setQuery(item.address)
     setSuggestions([])
     setSearchEnabled(false)
-    onChange({ address: item.address, city: item.city, latitude: item.latitude, longitude: item.longitude })
+    onChange({ address: item.address, city: item.city, country: item.country, latitude: item.latitude, longitude: item.longitude })
   }
 
   function toggleSearch() {

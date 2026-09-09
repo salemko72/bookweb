@@ -4,6 +4,7 @@ export type PropertyFormValues = {
   name: string
   address: string
   city: string
+  country: string
   color: string
   latitude: number | null
   longitude: number | null
@@ -42,6 +43,7 @@ export function propertyToFormValues(property: Property): PropertyFormValues {
     name: property.name,
     address: property.address ?? '',
     city: property.city ?? '',
+    country: property.country ?? '',
     color: property.color ?? '#7C5CFC',
     latitude: property.latitude ?? null,
     longitude: property.longitude ?? null,

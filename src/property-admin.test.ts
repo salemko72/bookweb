@@ -6,6 +6,7 @@ describe('property administration', () => {
     name: 'Priko',
     address: '',
     city: '',
+    country: '',
     color: '#7C5CFC',
     latitude: null,
     longitude: null,

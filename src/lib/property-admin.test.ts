@@ -6,6 +6,7 @@ describe('property administration', () => {
     name: 'Priko',
     address: 'Kralja Tomislava 27',
     city: 'Stari Grad',
+    country: 'Croatia',
     color: '#7C5CFC',
     latitude: 43.184,
     longitude: 16.592,
