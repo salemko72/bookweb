@@ -21,13 +21,14 @@ export function AddressAutocomplete({ value, onChange }: Props) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
-  const [chosen, setChosen] = useState(value.address.trim().length > 0)
+  const [searchEnabled, setSearchEnabled] = useState(false)
+  const inputRef = useRef<HTMLInputElement | null>(null)
   const requestRef = useRef<AbortController | null>(null)
 
   useEffect(() => { setQuery(value.address) }, [value.address])
 
   useEffect(() => {
-    if (chosen) return
+    if (!searchEnabled) return
     const q = query.trim()
     if (q.length < 3) { setSuggestions([]); return }
     const timer = window.setTimeout(() => {
@@ -41,28 +42,49 @@ export function AddressAutocomplete({ value, onChange }: Props) {
       }).finally(() => setLoading(false))
     }, 450)
     return () => window.clearTimeout(timer)
-  }, [query, chosen])
+  }, [query, searchEnabled])
+
+  useEffect(() => () => requestRef.current?.abort(), [])
 
   function choose(item: AddressSuggestion) {
     setQuery(item.address)
     setSuggestions([])
-    setChosen(true)
+    setSearchEnabled(false)
     onChange({ address: item.address, city: item.city, latitude: item.latitude, longitude: item.longitude })
+  }
+
+  function toggleSearch() {
+    const next = !searchEnabled
+    setSearchEnabled(next)
+    setError(false)
+    if (!next) {
+      requestRef.current?.abort()
+      setLoading(false)
+      setSuggestions([])
+      return
+    }
+    window.setTimeout(() => {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }, 0)
   }
 
   return <div className="relative">
     <label className="mb-1.5 block text-xs font-semibold text-slate-600">{t('address')}</label>
     <div className="relative">
-      <Search size={15} aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+      <MapPin size={15} aria-hidden className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
       <input
+        ref={inputRef}
         value={query}
-        onFocus={() => { if (!query.trim()) setChosen(false) }}
-        onChange={(e) => { const next=e.target.value; setQuery(next); if (!next.trim()) setChosen(false); onChange({ ...value, address: next, city: next.trim() ? value.city : '', latitude: null, longitude: null }) }}
-        placeholder={t('addressSearch')}
+        onChange={(e) => { const next=e.target.value; setQuery(next); onChange({ ...value, address: next, city: next.trim() ? value.city : '', latitude: null, longitude: null }) }}
+        onKeyDown={(e) => { if (e.key === 'Escape' && searchEnabled) toggleSearch() }}
+        placeholder={searchEnabled ? t('addressSearch') : t('address')}
         autoComplete="off"
-        className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-sm outline-none focus:border-violet-400"
+        className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-12 text-sm outline-none focus:border-violet-400"
       />
-      {loading && <LoaderCircle aria-label="Loading" size={16} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-violet-500" />}
+      <button type="button" aria-label={t('searchMap')} aria-pressed={searchEnabled} title={t('searchMap')} onClick={toggleSearch} className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg border border-transparent text-slate-400 transition hover:bg-violet-50 hover:text-violet-600 aria-pressed:border-violet-200 aria-pressed:bg-violet-100 aria-pressed:text-violet-700">
+        {loading ? <LoaderCircle aria-hidden size={16} className="animate-spin" /> : <Search aria-hidden size={16} />}
+      </button>
     </div>
     {suggestions.length > 0 && <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
       {suggestions.map((item) => <button key={`${item.label}-${item.latitude}`} type="button" role="option" onPointerDown={(event) => { event.preventDefault(); choose(item) }} onClick={() => choose(item)} className="flex w-full items-start gap-2.5 border-b border-slate-100 px-3 py-2.5 text-left last:border-0 hover:bg-violet-50">
@@ -72,6 +94,6 @@ export function AddressAutocomplete({ value, onChange }: Props) {
       </button>)}
     </div>}
     {error && <p className="mt-1.5 text-xs text-amber-600">{t('addressSearchError')}</p>}
-    <p className="mt-1.5 text-[11px] text-slate-400">{t('addressFallback')}</p>
+    <p className="mt-1.5 text-[11px] text-slate-400">{searchEnabled ? t('addressSearchActive') : t('addressFallback')}</p>
   </div>
 }

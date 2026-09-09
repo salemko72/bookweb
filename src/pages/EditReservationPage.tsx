@@ -126,7 +126,7 @@ export function EditReservationPage({ role = 'viewer' }: { role?: UserRole } = {
 
   return <section className="mx-auto max-w-3xl p-3 pb-8 md:p-5">
     <header className="mb-4 flex items-start justify-between gap-3">
-      <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">{t('reservations')}</p><h1 className="mt-1 text-3xl font-semibold sm:text-4xl tracking-tight">{readOnly ? t('reservationDetails') : t('editReservation')}<AgencyTitleMark /></h1><p className="mt-1 text-xs text-slate-500">{formatDateRange(`${checkIn}T12:00:00`, `${checkOut}T12:00:00`)}</p><NightCountBadge start={checkIn} end={checkOut} className="mt-2" /></div>
+      <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-500">{t('reservations')}</p><h1 className="mt-1 text-3xl font-semibold sm:text-4xl tracking-tight">{readOnly ? t('reservationDetails') : t('editReservation')}<AgencyTitleMark /></h1><p className="mt-1 text-xs text-slate-500">{formatDateRange(`${checkIn}T12:00:00`, `${checkOut}T12:00:00`)}</p></div>
       <button type="button" aria-label={t('close')} onClick={() => navigate('/calendar')} className="rounded-xl p-2 text-slate-400 hover:bg-white"><X size={18}/></button>
     </header>
 
@@ -134,7 +134,7 @@ export function EditReservationPage({ role = 'viewer' }: { role?: UserRole } = {
     {message && <div role="status" className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-medium text-emerald-700">{message}</div>}
 
     <section className="rounded-[1.35rem] bg-white p-4">
-      <div className="flex items-center gap-2 text-sm font-semibold"><CalendarDays size={17} className="text-violet-500"/>{t('stay')}</div>
+      <div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2 text-sm font-semibold"><CalendarDays size={17} className="text-violet-500"/>{t('stay')}</div><NightCountBadge start={checkIn} end={checkOut} /></div>
       <label className="mt-3 block text-[11px] font-semibold text-slate-600">{t('properties')}
         <select disabled={readOnly} aria-label={t('properties')} value={selectedPropertyId} onChange={(e) => setSelectedPropertyId(e.target.value)} className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-normal">
           {properties.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
