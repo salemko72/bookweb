@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "images:dev": "wrangler dev",
+    "images:check": "wrangler deploy --dry-run",
+    "images:deploy": "wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.115.0",
@@ -35,9 +38,11 @@
     "eslint-plugin-react-refresh": "^0.5.4",
     "globals": "^17.11.0",
     "jsdom": "^30.0.1",
+    "supabase": "2.117.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.67.0",
     "vite": "^8.2.2",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "wrangler": "4.130.0"
   }
 }

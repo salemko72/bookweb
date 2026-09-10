@@ -20,6 +20,11 @@ vi.mock('./lib/properties-repository', async () => ({
   deactivateProperty: vi.fn(),
 }))
 vi.mock('./lib/reservations-repository', () => ({ getReservations: vi.fn().mockResolvedValue([]) }))
+vi.mock('./lib/property-images-repository', () => ({
+  getPropertyImageRecord: vi.fn().mockResolvedValue(null),
+  savePropertyImageRecord: vi.fn().mockResolvedValue(null),
+  deletePropertyImageRecord: vi.fn().mockResolvedValue(undefined),
+}))
 import { PropertiesPage } from './pages/PropertiesPage'
 
 describe('property save flow', () => {

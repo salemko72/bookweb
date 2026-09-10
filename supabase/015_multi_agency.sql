@@ -371,6 +371,11 @@ create policy guests_select on public.guests for select to authenticated
 using (agency_id=public.requested_agency_id() and public.current_user_role() in ('owner','admin','manager','viewer')
   and (public.current_user_role() in ('owner','admin') or created_by=auth.uid()
     or exists (select 1 from public.reservations r where r.guest_id=guests.id and public.has_property_access(r.property_id))));
+create policy guests_insert on public.guests for insert to authenticated
+with check (agency_id=public.requested_agency_id() and public.current_user_role() in ('owner','admin'));
+create policy guests_update on public.guests for update to authenticated
+using (agency_id=public.requested_agency_id() and public.current_user_role() in ('owner','admin'))
+with check (agency_id=public.requested_agency_id() and public.current_user_role() in ('owner','admin'));
 create policy property_tasks_select on public.property_tasks for select to authenticated
 using (public.current_user_role() in ('owner','admin','manager','viewer') and public.has_property_access(property_id));
 create policy property_tasks_write on public.property_tasks for all to authenticated
@@ -428,4 +433,5 @@ revoke insert, update, delete on public.agency_memberships from authenticated;
 
 grant select on public.agencies, public.agency_memberships to authenticated;
 grant update on public.agencies to authenticated;
+grant insert, update on public.guests to authenticated;
 commit;

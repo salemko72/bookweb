@@ -1,12 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const getAllPropertiesMock = vi.hoisted(() => vi.fn())
 const getExternalCalendarsMock = vi.hoisted(() => vi.fn())
 const createExternalCalendarMock = vi.hoisted(() => vi.fn())
 const updateExternalCalendarMock = vi.hoisted(() => vi.fn())
 const deleteExternalCalendarMock = vi.hoisted(() => vi.fn())
+const propertyImageStoreMock = vi.hoisted(() => vi.fn())
 
 vi.mock('./lib/properties-repository', () => ({ getAllProperties: getAllPropertiesMock }))
 vi.mock('./lib/ical-repository', () => ({
@@ -14,6 +15,12 @@ vi.mock('./lib/ical-repository', () => ({
   createExternalCalendar: createExternalCalendarMock,
   updateExternalCalendar: updateExternalCalendarMock,
   deleteExternalCalendar: deleteExternalCalendarMock,
+}))
+vi.mock('./lib/property-image-storage', () => ({ propertyImageStorage: { store: propertyImageStoreMock } }))
+vi.mock('./lib/property-images-repository', () => ({
+  getPropertyImageRecord: vi.fn().mockResolvedValue(null),
+  savePropertyImageRecord: vi.fn().mockResolvedValue(null),
+  deletePropertyImageRecord: vi.fn().mockResolvedValue(undefined),
 }))
 
 import { PropertiesPage } from './pages/PropertiesPage'
@@ -33,6 +40,10 @@ const priko = {
 }
 
 describe('PropertiesPage', () => {
+  beforeEach(() => {
+    localStorage.setItem('bookweb-active-agency', '11111111-1111-4111-8111-111111111111')
+    propertyImageStoreMock.mockReset()
+  })
   it('lets a viewer inspect a property without editing or calendar feed access', async () => {
     getAllPropertiesMock.mockResolvedValue([priko])
     getExternalCalendarsMock.mockClear()
@@ -104,5 +115,31 @@ describe('PropertiesPage', () => {
       expect(screen.getByText(/61 m²/i)).toBeInTheDocument()
       expect(screen.getByLabelText('6 guests')).toBeInTheDocument()
     })
+  })
+
+  it('shows an immediate local preview and then the optimized image', async () => {
+    getAllPropertiesMock.mockResolvedValue([])
+    getExternalCalendarsMock.mockResolvedValue([])
+    let finishProcessing!: (value: unknown) => void
+    propertyImageStoreMock.mockReturnValue(new Promise(resolve => { finishProcessing = resolve }))
+    const createObjectURL = vi.fn(() => 'blob:local-property-preview')
+    const revokeObjectURL = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: createObjectURL })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revokeObjectURL })
+
+    render(<MemoryRouter><PropertiesPage role="admin" /></MemoryRouter>)
+    fireEvent.click(await screen.findByRole('button', { name: /new property/i }))
+    fireEvent.change(screen.getByLabelText('Property image'), {
+      target: { files: [new File(['photo'], 'iphone.jpg', { type: 'image/jpeg' })] },
+    })
+
+    expect(await screen.findByAltText('Property preview')).toHaveAttribute('src', 'blob:local-property-preview')
+    finishProcessing({
+      url: 'data:image/webp;base64,b3B0aW1pemVk', provider: 'inline', storageKey: null,
+      originalWidth: 4032, originalHeight: 3024, originalBytes: 5_000_000,
+      width: 1067, height: 800, bytes: 100_000, mimeType: 'image/webp', format: 'webp', compressionRatio: 0.02,
+    })
+    await waitFor(() => expect(screen.getByAltText('Property preview')).toHaveAttribute('src', 'data:image/webp;base64,b3B0aW1pemVk'))
+    await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledWith('blob:local-property-preview'))
   })
 })

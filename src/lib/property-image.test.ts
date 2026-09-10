@@ -1,48 +1,38 @@
 import { describe, expect, it } from 'vitest'
-import { readImageFile, validateImageFile } from './property-image'
+import { calculateImageDimensions, PROPERTY_IMAGE_POLICY, validateImageFile } from './property-image'
 
 describe('property image validation', () => {
-  it('accepts a normal image file', () => {
+  it('accepts normal images and iPhone HEIC files', () => {
     expect(validateImageFile(new File(['image'], 'house.jpg', { type: 'image/jpeg' }))).toBeNull()
+    expect(validateImageFile(new File(['image'], 'IMG_1042.HEIC', { type: '' }))).toBeNull()
   })
 
-  it('rejects non-image files', () => {
+  it('rejects non-images and protects the browser from extremely large sources', () => {
     expect(validateImageFile(new File(['text'], 'notes.txt', { type: 'text/plain' }))).toBe('Please choose an image file.')
+    const tooLarge = new File([new Uint8Array(30 * 1024 * 1024 + 1)], 'camera.jpg', { type: 'image/jpeg' })
+    expect(validateImageFile(tooLarge)).toBe('The source image is larger than 30 MB.')
+  })
+})
+
+describe('display-derived property dimensions', () => {
+  it('reduces a typical landscape phone photo using an 800px short edge', () => {
+    expect(calculateImageDimensions(4032, 3024)).toEqual({ width: 1067, height: 800 })
   })
 
-  it('accepts large phone images for automatic compression', () => {
-    const largeImage = new File([new Uint8Array(3 * 1024 * 1024)], 'phone-photo.jpg', { type: 'image/jpeg' })
-    expect(validateImageFile(largeImage)).toBeNull()
+  it('keeps enough horizontal pixels for a portrait photo used in object-cover cards', () => {
+    expect(calculateImageDimensions(3024, 4032)).toEqual({ width: 800, height: 1067 })
   })
 
-  it('does not use the original file when its data URL would exceed the limit', async () => {
-    const file = new File([new Uint8Array(1.8 * 1024 * 1024)], 'phone-photo.jpg', { type: 'image/jpeg' })
-    const originalFileReader = globalThis.FileReader
-    const originalImage = globalThis.Image
-    const originalDocument = globalThis.document
-    const compressed = 'data:image/webp;base64,' + 'a'.repeat(100)
+  it('caps panoramic images without distorting their aspect ratio', () => {
+    expect(calculateImageDimensions(8000, 2000)).toEqual({ width: 1600, height: 400 })
+  })
 
-    class MockFileReader {
-      result: string | null = 'data:image/jpeg;base64,' + 'a'.repeat(2_500_000)
-      onload: (() => void) | null = null
-      onerror: (() => void) | null = null
-      readAsDataURL() { this.onload?.() }
-    }
-    Object.defineProperty(globalThis, 'FileReader', { configurable: true, value: MockFileReader })
-    Object.defineProperty(globalThis, 'Image', { configurable: true, value: class {
-      naturalWidth = 100
-      naturalHeight = 100
-      onload: (() => void) | null = null
-      onerror: (() => void) | null = null
-      set src(_value: string) { this.onload?.() }
-    } })
-    Object.defineProperty(globalThis, 'document', { configurable: true, value: {
-      createElement: () => ({ width: 0, height: 0, getContext: () => ({ drawImage: () => undefined }), toDataURL: () => compressed }),
-    } })
+  it('never upscales a smaller image', () => {
+    expect(calculateImageDimensions(640, 480)).toEqual({ width: 640, height: 480 })
+  })
 
-    await expect(readImageFile(file)).resolves.toBe(compressed)
-    Object.defineProperty(globalThis, 'FileReader', { configurable: true, value: originalFileReader })
-    Object.defineProperty(globalThis, 'Image', { configurable: true, value: originalImage })
-    Object.defineProperty(globalThis, 'document', { configurable: true, value: originalDocument })
+  it('uses the measured file-size budget instead of a generic 2 MB target', () => {
+    expect(PROPERTY_IMAGE_POLICY.targetBytes).toBe(160 * 1024)
+    expect(PROPERTY_IMAGE_POLICY.hardMaxBytes).toBe(240 * 1024)
   })
 })

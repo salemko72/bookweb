@@ -6,7 +6,9 @@ import { PropertyTimeline } from '../components/PropertyTimeline'
 import { AgencyTitleMark } from '../components/AgencyTitleMark'
 import { createProperty, deleteProperty, deactivateProperty, getAllProperties, updateProperty, type Property } from '../lib/properties-repository'
 import { propertyToFormValues, validateProperty, type PropertyFormValues } from '../lib/property-admin'
-import { readImageFile } from '../lib/property-image'
+import { propertyImageStorage, type StoredPropertyImage } from '../lib/property-image-storage'
+import { deletePropertyImageRecord, getPropertyImageRecord, savePropertyImageRecord, type PropertyImageRecord } from '../lib/property-images-repository'
+import { getActiveAgencyId } from '../lib/agency-session'
 import { getReservations, type Reservation } from '../lib/reservations-repository'
 import { createExternalCalendar, deleteExternalCalendar, getExternalCalendars, updateExternalCalendar, type ExternalCalendarRecord } from '../lib/ical-repository'
 import { useT } from '../lib/i18n'
@@ -47,6 +49,10 @@ export function PropertiesPage({ role = 'viewer' }: { role?: UserRole } = {}) {
   const [message,setMessage]=useState<string|null>(null)
   const [error,setError]=useState<string|null>(null)
   const [imageBusy,setImageBusy]=useState(false)
+  const [imageReport,setImageReport]=useState<StoredPropertyImage|null>(null)
+  const [imagePreviewUrl,setImagePreviewUrl]=useState<string|null>(null)
+  const [draftPropertyId,setDraftPropertyId]=useState<string|null>(null)
+  const [persistedImage,setPersistedImage]=useState<PropertyImageRecord|null>(null)
   const [propertyReservations,setPropertyReservations]=useState<Reservation[]>([])
   const [calendarLinks,setCalendarLinks]=useState<ExternalCalendarRecord[]>([])
   const [draftLinks,setDraftLinks]=useState<CalendarLinkDraft[]>([])
@@ -59,29 +65,95 @@ export function PropertiesPage({ role = 'viewer' }: { role?: UserRole } = {}) {
   async function load(){setLoading(true);try{setProperties(await getAllProperties());setError(null)}catch{setError('Unable to load properties.')}finally{setLoading(false)}}
   useEffect(()=>{void load()},[])
   useEffect(()=>{const sync=()=>setMeasurementUnits(getSettings().measurementUnits);window.addEventListener('booking-manager-settings-change',sync);return()=>window.removeEventListener('booking-manager-settings-change',sync)},[])
+  useEffect(()=>()=>{
+    if(imagePreviewUrl&&typeof URL.revokeObjectURL==='function')URL.revokeObjectURL(imagePreviewUrl)
+  },[imagePreviewUrl])
+
+  function clearImagePreview(){setImagePreviewUrl(null)}
+
+  function showImagePreview(file:File){
+    clearImagePreview()
+    if(typeof URL.createObjectURL!=='function')return
+    setImagePreviewUrl(URL.createObjectURL(file))
+  }
 
   async function loadLinks(propertyId: string){setLinksLoading(true);try{setCalendarLinks(await getExternalCalendars(propertyId))}catch{setCalendarLinks([]);setError('Unable to load calendar links.')}finally{setLinksLoading(false)}}
 
-  function startCreate(){if(!['owner','admin'].includes(role))return;setEditingId(null);setEditorOpen(true);setForm({...emptyForm});setPropertyReservations([]);setCalendarLinks([]);setDraftLinks([]);setLinksOpen(true);setNewLinkUrl('');setMessage(null);setError(null)}
-  async function startEdit(property:Property){setEditingId(property.id);setEditorOpen(true);setForm(propertyToFormValues(property));setDraftLinks([]);setMessage(null);setError(null);setLinksOpen(false);setNewLinkUrl('');if(canEditProperty(role))void loadLinks(property.id);try{setPropertyReservations(await getReservations('2000-01-01T00:00:00','2100-01-01T00:00:00'))}catch{setPropertyReservations([])}}
-  function closeEditor(){setEditorOpen(false);setEditingId(null);setForm({...emptyForm});setCalendarLinks([]);setDraftLinks([]);setLinksOpen(true);setNewLinkUrl('')}
+  async function loadPersistedImage(propertyId:string){
+    try{setPersistedImage(await getPropertyImageRecord(propertyId))}
+    catch{setPersistedImage(null)}
+  }
+
+  function cancelImageWork(){clearImagePreview();setImageBusy(false)}
+  function discardStagedImage(){
+    const agencyId=getActiveAgencyId()
+    if(imageReport?.provider==='r2'&&imageReport.storageKey&&agencyId){
+      void propertyImageStorage.remove(imageReport,{agencyId}).catch(()=>undefined)
+    }
+  }
+  function resetEditor(discardPendingImage:boolean){
+    if(discardPendingImage)discardStagedImage()
+    cancelImageWork();setEditorOpen(false);setEditingId(null);setDraftPropertyId(null);setForm({...emptyForm});setImageReport(null);setPersistedImage(null);setCalendarLinks([]);setDraftLinks([]);setLinksOpen(true);setNewLinkUrl('')
+  }
+  function startCreate(){if(!['owner','admin'].includes(role))return;discardStagedImage();cancelImageWork();setEditingId(null);setDraftPropertyId(crypto.randomUUID());setEditorOpen(true);setForm({...emptyForm});setImageReport(null);setPersistedImage(null);setPropertyReservations([]);setCalendarLinks([]);setDraftLinks([]);setLinksOpen(true);setNewLinkUrl('');setMessage(null);setError(null)}
+  async function startEdit(property:Property){discardStagedImage();cancelImageWork();setEditingId(property.id);setDraftPropertyId(null);setEditorOpen(true);setForm(propertyToFormValues(property));setImageReport(null);setPersistedImage(null);setDraftLinks([]);setMessage(null);setError(null);setLinksOpen(false);setNewLinkUrl('');if(canEditProperty(role)){void loadLinks(property.id);void loadPersistedImage(property.id)}try{setPropertyReservations(await getReservations('2000-01-01T00:00:00','2100-01-01T00:00:00'))}catch{setPropertyReservations([])}}
+  function closeEditor(){resetEditor(true)}
   function set<K extends keyof PropertyFormValues>(key:K,value:PropertyFormValues[K]){setForm(current=>({...current,[key]:value}))}
-  async function handleImageChange(file?:File){if(!file)return;setImageBusy(true);setError(null);try{set('image_url',await readImageFile(file))}catch(err){setError(err instanceof Error?err.message:'Unable to read image.')}finally{setImageBusy(false)}}
+  async function handleImageChange(file?:File){
+    if(!file)return
+    const agencyId=getActiveAgencyId()
+    const propertyId=editingId||draftPropertyId
+    if(!agencyId||!propertyId){setError('Choose an agency before adding a property image.');return}
+    const previousStaged=imageReport
+    showImagePreview(file);setImageBusy(true);setImageReport(null);setError(null)
+    try{
+      const stored=await propertyImageStorage.store(file,{agencyId,propertyId})
+      set('image_url',stored.url);setImageReport(stored);clearImagePreview()
+      if(previousStaged?.provider==='r2'&&previousStaged.storageKey&&previousStaged.storageKey!==stored.storageKey){
+        void propertyImageStorage.remove(previousStaged,{agencyId}).catch(()=>undefined)
+      }
+    }catch(err){
+      clearImagePreview();setError(err instanceof Error?err.message:'Unable to read image.')
+    }finally{
+      setImageBusy(false)
+    }
+  }
 
   function addDraftCalendarLink(){if(!newLinkUrl.trim())return;setDraftLinks(current=>[...current,{source:newLinkSource,feed_url:newLinkUrl.trim()}]);setNewLinkUrl('')}
   function removeDraftCalendarLink(index:number){setDraftLinks(current=>current.filter((_,itemIndex)=>itemIndex!==index))}
+
+  async function persistPropertyImage(propertyId:string){
+    const agencyId=getActiveAgencyId()
+    if(!agencyId)return
+    if(imageReport?.provider==='r2'&&imageReport.storageKey){
+      await savePropertyImageRecord(propertyId,imageReport)
+      if(persistedImage?.storage_key&&persistedImage.storage_key!==imageReport.storageKey){
+        await propertyImageStorage.remove({storageKey:persistedImage.storage_key},{agencyId})
+      }
+      return
+    }
+    if(persistedImage&&(imageReport?.provider==='inline'||!form.image_url)){
+      await deletePropertyImageRecord(propertyId)
+      await propertyImageStorage.remove({storageKey:persistedImage.storage_key},{agencyId})
+    }
+  }
 
   async function save(){
     if(!canEditProperty(role))return;
     const validationError=validateProperty(form);if(validationError){setError(validationError);return}
     setSaving(true);setError(null);setMessage(null)
     try{
-      if(editingId){await updateProperty(editingId,form);setCalendarLinks(calendarLinks);await load();closeEditor();setMessage('Property updated.')}
+      let propertyId=editingId
+      const creating=!propertyId
+      if(propertyId)await updateProperty(propertyId,form)
       else{
-        const created=await createProperty(form)
-        for(const link of draftLinks){await createExternalCalendar({property_id:created.id,source:link.source,feed_url:link.feed_url,is_active:true,last_synced_at:null,sync_status:'idle'})}
-        await load();closeEditor();setMessage('Property created.')
+        const created=await createProperty(form,draftPropertyId||undefined)
+        propertyId=created.id
+        setEditingId(created.id)
       }
+      await persistPropertyImage(propertyId)
+      for(const link of draftLinks){await createExternalCalendar({property_id:propertyId,source:link.source,feed_url:link.feed_url,is_active:true,last_synced_at:null,sync_status:'idle'})}
+      setDraftLinks([]);setCalendarLinks(calendarLinks);await load();resetEditor(false);setMessage(creating?'Property created.':'Property updated.')
     }catch(reason){
       const message = saveErrorMessage(reason)
       const detail = message ? ` ${message}` : ''
@@ -91,13 +163,14 @@ export function PropertiesPage({ role = 'viewer' }: { role?: UserRole } = {}) {
 
   async function reactivate(){if(!editingId)return;setSaving(true);try{await updateProperty(editingId,{is_active:true});closeEditor();await load()}catch{setError(t('propertyActionFailed'))}finally{setSaving(false)}}
   async function reactivateProperty(id:string){try{await updateProperty(id,{is_active:true});await load()}catch{setError(t('propertyActionFailed'))}}
-  async function removeProperty(){if(!editingId||!['owner','admin'].includes(role)||!window.confirm(t('confirmDeleteProperty')))return;setSaving(true);try{await deleteProperty(editingId);closeEditor();await load()}catch{setError(t('propertyActionFailed'))}finally{setSaving(false)}}
+  async function removeProperty(){if(!editingId||!['owner','admin'].includes(role)||!window.confirm(t('confirmDeleteProperty')))return;setSaving(true);try{const agencyId=getActiveAgencyId();const storageKey=persistedImage?.storage_key;await deleteProperty(editingId);if(agencyId&&storageKey)await propertyImageStorage.remove({storageKey},{agencyId});resetEditor(true);await load()}catch{setError(t('propertyActionFailed'))}finally{setSaving(false)}}
   async function deactivate(){if(!editingId)return;setSaving(true);setError(null);try{await deactivateProperty(editingId);closeEditor();setMessage('Property deactivated.');await load()}catch{setError('Unable to deactivate property.')}finally{setSaving(false)}}
   async function addCalendarLink(){if(!editingId||!newLinkUrl.trim())return;setLinkSavingId('new');setError(null);try{const created=await createExternalCalendar({property_id:editingId,source:newLinkSource,feed_url:newLinkUrl.trim(),is_active:true,last_synced_at:null,sync_status:'idle'});setCalendarLinks(current=>[...current,created]);setNewLinkUrl('');setMessage('Calendar link added.')}catch{setError('Unable to add calendar link.')}finally{setLinkSavingId(null)}}
   async function saveCalendarLink(link:ExternalCalendarRecord){setLinkSavingId(link.id);setError(null);try{const updated=await updateExternalCalendar(link.id,{source:link.source,feed_url:link.feed_url,is_active:link.is_active});setCalendarLinks(current=>current.map(item=>item.id===updated.id?updated:item));setMessage('Calendar link updated.')}catch{setError('Unable to update calendar link.')}finally{setLinkSavingId(null)}}
   async function removeCalendarLink(id:string){setLinkSavingId(id);setError(null);try{await deleteExternalCalendar(id);setCalendarLinks(current=>current.filter(item=>item.id!==id));setMessage('Calendar link removed.')}catch{setError('Unable to remove calendar link.')}finally{setLinkSavingId(null)}}
   const activeProperties = properties.filter(property => property.is_active)
   const inactiveProperties = properties.filter(property => !property.is_active)
+  const visibleImageUrl = imagePreviewUrl || form.image_url
 
   return <section className="mx-auto w-full min-w-0 max-w-6xl p-3 pb-8 md:p-5">
     <style>{`section:has(button[aria-label="Close property editor"]) label:has(input[step="0.01"]) { display: none; }`}</style>
@@ -117,8 +190,10 @@ export function PropertiesPage({ role = 'viewer' }: { role?: UserRole } = {}) {
 
       {editorOpen&&!canEditProperty(role)&&<section className="order-first w-full min-w-0 max-w-full overflow-hidden rounded-2xl bg-white p-5"><button onClick={closeEditor} className="float-right p-2">Close</button><h2 className="text-xl font-semibold">{form.name}</h2><p className="mt-3">{[form.address,form.city,form.country].filter(Boolean).join(', ')}</p><p className="mt-2">{form.capacity} guests · {form.rooms} rooms · {formatArea(form.area_m2,measurementUnits)}</p><p className="mt-2">Check-in {form.check_in_time} · Check-out {form.check_out_time}</p><p className="mt-2 whitespace-pre-wrap">{form.notes}</p>{editingId&&<PropertyTimeline property={properties.find(p=>p.id===editingId)!} reservations={propertyReservations}/>}</section>}
       {editorOpen&&canEditProperty(role)&&<section className="order-first w-full min-w-0 max-w-full overflow-hidden rounded-[1.35rem] border border-[#e5ded3] bg-white p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-500">{editingId?t('editProperty'):t('newProperty')}</p><h2 className="mt-1 text-lg font-semibold tracking-tight">{editingId?form.name||'Property':t('propertyDetails')}</h2></div><button type="button" onClick={closeEditor} aria-label="Close property editor" className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100"><X size={16}/></button></div>
-        <label className="mt-3 block cursor-pointer rounded-xl border border-dashed border-slate-300 bg-slate-50 p-1.5"><input type="file" accept="image/*" className="sr-only" onChange={e=>void handleImageChange(e.target.files?.[0])}/>{form.image_url?<div className="relative h-36 overflow-hidden rounded-lg"><img src={form.image_url} alt="Property preview" className="h-full w-full object-cover"/><span className="absolute bottom-2 left-2 rounded-md bg-black/55 px-2 py-1 text-[10px] font-semibold text-white">{t('changeImage')}</span></div>:<div className="flex h-36 flex-col items-center justify-center rounded-lg bg-white text-center"><ImagePlus size={22} className="text-violet-500"/><p className="mt-1.5 text-xs font-semibold">{t('addPropertyImage')}</p><p className="mt-0.5 text-[10px] text-slate-500">{t('imageHint')}</p></div>}</label>
-        {form.image_url&&<button type="button" onClick={()=>set('image_url',null)} className="mt-1.5 text-[10px] font-semibold text-slate-500 hover:text-rose-600">{t('removeImage')}</button>}
+        <label className="mt-3 block cursor-pointer rounded-xl border border-dashed border-slate-300 bg-slate-50 p-1.5"><input aria-label="Property image" type="file" accept="image/*,.heic,.heif" className="sr-only" onChange={e=>void handleImageChange(e.target.files?.[0])}/>{visibleImageUrl?<div className="relative h-36 overflow-hidden rounded-lg"><img src={visibleImageUrl} alt="Property preview" className="h-full w-full object-cover"/><span className="absolute bottom-2 left-2 rounded-md bg-black/55 px-2 py-1 text-[10px] font-semibold text-white">{imageBusy?t('optimizingImage'):t('changeImage')}</span></div>:<div className="flex h-36 flex-col items-center justify-center rounded-lg bg-white text-center"><ImagePlus size={22} className="text-violet-500"/><p className="mt-1.5 text-xs font-semibold">{t('addPropertyImage')}</p><p className="mt-0.5 text-[10px] text-slate-500">{t('imageHint')}</p></div>}</label>
+        {imageBusy&&<p className="mt-1.5 text-[10px] font-medium text-violet-600">{t('optimizingImage')}</p>}
+        {imageReport&&<p data-testid="property-image-report" className="mt-1.5 text-[10px] text-slate-500">{imageReport.originalWidth}×{imageReport.originalHeight} · {formatImageBytes(imageReport.originalBytes)} → {imageReport.width}×{imageReport.height} · {formatImageBytes(imageReport.bytes)} {imageReport.format.toUpperCase()}</p>}
+        {visibleImageUrl&&<button type="button" onClick={()=>{discardStagedImage();cancelImageWork();set('image_url',null);setImageReport(null)}} className="mt-1.5 text-[10px] font-semibold text-slate-500 hover:text-rose-600">{t('removeImage')}</button>}
         <div className="mt-3 grid gap-3 md:grid-cols-2"><label className="text-[11px] font-semibold text-slate-600 md:col-span-2">{t('name')}<input aria-label="Name" value={form.name} onChange={e=>set('name',e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal outline-none focus:border-violet-400"/></label><div className="md:col-span-2"><AddressAutocomplete value={{address:form.address,city:form.city,country:form.country,latitude:form.latitude,longitude:form.longitude}} onChange={v=>{set('address',v.address);set('city',v.city);set('country',v.country);set('latitude',v.latitude);set('longitude',v.longitude)}}/></div><label className="text-[11px] font-semibold text-slate-600">{t('city')}<input aria-label={t('city')} value={form.city} onChange={e=>set('city',e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('country')}<input aria-label={t('country')} value={form.country} onChange={e=>set('country',e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('guests')}<input type="number" min={1} value={form.capacity} onChange={e=>set('capacity',Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('rooms')}<input type="number" min={1} value={form.rooms} onChange={e=>set('rooms',Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('area')} ({areaUnit(measurementUnits)})<input type="number" min={0} step="0.1" value={areaForDisplay(form.area_m2,measurementUnits)??''} onChange={e=>set('area_m2',e.target.value?areaToSquareMeters(Number(e.target.value),measurementUnits):null)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('pricePerNight')}<input type="number" min={0} step="0.01" value={form.nightly_rate ?? ""} onChange={e=>set('nightly_rate',e.target.value===""?null:Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('cleaning')} (min)<input type="number" min={0} value={form.cleaning_duration_minutes} onChange={e=>set('cleaning_duration_minutes',Number(e.target.value))} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('checkIn')}<input type="time" value={form.check_in_time} onChange={e=>set('check_in_time',e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label><label className="text-[11px] font-semibold text-slate-600">{t('checkOut')}<input type="time" value={form.check_out_time} onChange={e=>set('check_out_time',e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-normal"/></label></div>
         <label className="mt-3 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-[11px] font-semibold text-slate-600"><Palette size={14} className="text-slate-400"/>{t('color')}<input aria-label={t('color')} type="color" value={form.color} onChange={e=>set('color',e.target.value)} className="ml-auto h-8 w-12 cursor-pointer rounded-lg border-0 bg-transparent p-0"/></label>
         <div className="mt-2 grid grid-cols-2 gap-1.5">{featureItems.map(([key,label,Icon])=><label key={key} className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-[10px] font-semibold text-slate-600"><input type="checkbox" checked={Boolean(form[key])} onChange={e=>set(key,e.target.checked as PropertyFormValues[typeof key])} className="h-3.5 w-3.5 accent-violet-600"/><Icon size={13} className="text-slate-400"/>{label}</label>)}</div>
@@ -172,4 +247,6 @@ export function PropertiesPage({ role = 'viewer' }: { role?: UserRole } = {}) {
     </div>
   </section>
 }
+
+function formatImageBytes(bytes:number){return bytes>=1024*1024?`${(bytes/(1024*1024)).toFixed(1)} MB`:`${Math.max(1,Math.round(bytes/1024))} KB`}
 

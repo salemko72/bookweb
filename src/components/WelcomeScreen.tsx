@@ -13,14 +13,14 @@ const copy = {
   hr: {
     eyebrow: 'PomaaaloDesk', title: 'Jednostavno upravljanje vašim smještajem.', body: 'Nekretnine, rezervacije, gosti i dnevni poslovi ostaju uredno odvojeni za svaki tim.',
     welcome: 'Dobro došli', welcomeHint: 'Odaberite kako želite početi.', create: 'Kreiraj novu agenciju', createHint: 'Postavite naziv, profilnu sliku i Owner račun.', signin: 'Prijavi se', signinHint: 'Nastavite u agenciju kojoj već pripadate.', invite: 'Imam pozivnicu', inviteHint: 'Prijavite se e-mailom na koji je stigla pozivnica.',
-    known: 'Vaše agencije', back: 'Nazad', agencyTitle: 'Nova agencija', agencyBody: 'Ovo postaje odvojeni prostor za vaše nekretnine, rezervacije i tim.', agencyName: 'Naziv agencije', country: 'Država', language: 'Jezik', currency: 'Valuta', logo: 'Profilna slika agencije', optional: 'Neobavezno · JPG ili PNG do 2 MB', continue: 'Nastavi na Owner račun',
+    known: 'Vaše agencije', back: 'Nazad', agencyTitle: 'Nova agencija', agencyBody: 'Ovo postaje odvojeni prostor za vaše nekretnine, rezervacije i tim.', agencyName: 'Naziv agencije', country: 'Država', language: 'Jezik', currency: 'Valuta', logo: 'Profilna slika agencije', optional: 'Neobavezno · velika slika se automatski optimizira', continue: 'Nastavi na Owner račun',
     ownerTitle: 'Kreirajte Owner račun', ownerBody: 'Prva osoba automatski dobiva sva prava u ovoj agenciji.', ownerWorkspace: 'Vlasnik agencije', fullName: 'Ime i prezime', password: 'Lozinka', createWorkspace: 'Kreiraj agenciju', creating: 'Kreiranje…', existing: 'Već imate PomaaaloDesk račun?', existingAction: 'Prijavi se i kreiraj ovu agenciju', verify: 'Provjerite e-mail. Nakon potvrde otvorite ovu stranicu i agencija će se automatski kreirati.',
     secure: 'Podaci svake agencije ostaju odvojeni', automatic: 'Nakon prijave ulazite direktno na Home', invitationTitle: 'Prihvatite pozivnicu', invitationBody: 'Otvorite link iz e-maila, postavite lozinku ako se to traži, pa se prijavite ovdje.',
   },
   en: {
     eyebrow: 'PomaaaloDesk', title: 'Simple management for your rental.', body: 'Properties, bookings, guests and daily operations stay clearly separated for every team.',
     welcome: 'Welcome', welcomeHint: 'Choose how you want to begin.', create: 'Create a new agency', createHint: 'Set the name, profile image and Owner account.', signin: 'Sign in', signinHint: 'Continue to an agency you already belong to.', invite: 'I have an invitation', inviteHint: 'Sign in with the email address that received the invitation.',
-    known: 'Your agencies', back: 'Back', agencyTitle: 'New agency', agencyBody: 'This becomes a separate workspace for your properties, bookings and team.', agencyName: 'Agency name', country: 'Country', language: 'Language', currency: 'Currency', logo: 'Agency profile image', optional: 'Optional · JPG or PNG up to 2 MB', continue: 'Continue to Owner account',
+    known: 'Your agencies', back: 'Back', agencyTitle: 'New agency', agencyBody: 'This becomes a separate workspace for your properties, bookings and team.', agencyName: 'Agency name', country: 'Country', language: 'Language', currency: 'Currency', logo: 'Agency profile image', optional: 'Optional · large images are optimized automatically', continue: 'Continue to Owner account',
     ownerTitle: 'Create the Owner account', ownerBody: 'The first person automatically receives full rights in this agency.', ownerWorkspace: 'Agency owner', fullName: 'Full name', password: 'Password', createWorkspace: 'Create agency', creating: 'Creating…', existing: 'Already have a PomaaaloDesk account?', existingAction: 'Sign in and create this agency', verify: 'Check your email. After confirmation, reopen this page and the agency will be created automatically.',
     secure: 'Each agency’s data stays separate', automatic: 'After sign-in you go directly to Home', invitationTitle: 'Accept your invitation', invitationBody: 'Open the link from the email, set a password if requested, then sign in here.',
   },
@@ -49,7 +49,7 @@ export function WelcomeScreen({ onAuthenticated }: { onAuthenticated: () => void
   function chooseAgency(id: string) { clearPendingAgency(); setSignInCreatesAgency(false); setActiveAgencyId(id); go('signin') }
   async function selectLogo(file?: File) {
     if (!file) return
-    try { const logo_url = await readImageFile(file); setAgency((current) => ({ ...current, logo_url })); setError(null) }
+    try { const logo_url = await readImageFile(file, 'agency-logo'); setAgency((current) => ({ ...current, logo_url })); setError(null) }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to read image.') }
   }
   function continueAgency(event: FormEvent) {
