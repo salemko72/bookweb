@@ -25,7 +25,11 @@ type Member = { role?: string; is_active?: boolean }
 type AuthenticatedUser = { id?: string }
 
 const MAX_IMAGE_BYTES = 240 * 1024
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+// PostgreSQL's uuid type accepts the canonical hexadecimal shape without
+// requiring RFC version/variant bits. Jolie Agency was migrated with the
+// reserved UUID 00000000-0000-0000-0000-000000000001, so applying an RFC-only
+// validator here incorrectly rejected valid database identifiers.
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const WRITE_ROLES = new Set(['owner', 'admin', 'manager'])
 
 export default {

@@ -39,15 +39,20 @@ function validWebp() {
   return new Uint8Array([0x52,0x49,0x46,0x46,0,0,0,0,0x57,0x45,0x42,0x50,1,2,3,4])
 }
 
-function uploadRequest(body: Uint8Array, origin = 'https://bookweb.pages.dev') {
+function uploadRequest(
+  body: Uint8Array,
+  origin = 'https://bookweb.pages.dev',
+  selectedAgencyId = agencyId,
+  selectedPropertyId = propertyId,
+) {
   return new Request('https://pomaaalodesk-images.workers.dev/v1/property-images', {
     method: 'POST',
     headers: {
       Origin: origin,
       Authorization: 'Bearer valid-token',
       'Content-Type': 'image/webp',
-      'X-Agency-Id': agencyId,
-      'X-Property-Id': propertyId,
+      'X-Agency-Id': selectedAgencyId,
+      'X-Property-Id': selectedPropertyId,
       'X-Image-Width': '1067',
       'X-Image-Height': '800',
       'X-Original-Width': '4032',
@@ -76,6 +81,20 @@ describe('property image Worker', () => {
     expect(result.storageKey).toMatch(new RegExp(`^agencies/${agencyId}/properties/${propertyId}/.+\\.webp$`))
     expect(result.url).toContain(`/images/${result.storageKey}`)
     expect(bucket.objects.has(result.storageKey)).toBe(true)
+  })
+
+  it('accepts the reserved PostgreSQL UUID used by the migrated Jolie Agency', async () => {
+    mockSupabaseAccess()
+    const bucket = new MemoryBucket()
+    const legacyAgencyId = '00000000-0000-0000-0000-000000000001'
+    const response = await worker.fetch(
+      uploadRequest(validWebp(), 'https://bookweb.pages.dev', legacyAgencyId),
+      env(bucket),
+    )
+    const result = await response.json() as { storageKey: string }
+
+    expect(response.status).toBe(201)
+    expect(result.storageKey).toMatch(new RegExp(`^agencies/${legacyAgencyId}/properties/${propertyId}/`))
   })
 
   it('rejects a file whose bytes do not match its declared format', async () => {
