@@ -8,7 +8,14 @@ export async function signInWithPassword(email: string, password: string) {
 }
 
 export async function signUpOwner(email: string, password: string, fullName: string) {
-  return supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } })
+  return supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName },
+      emailRedirectTo: `${window.location.origin}/`,
+    },
+  })
 }
 
 export async function getCurrentSession() {

@@ -1,6 +1,6 @@
 import { type FormEvent, useMemo, useState } from 'react'
 import { ArrowLeft, Building2, ImagePlus, KeyRound, Mail, ShieldCheck, Sparkles, UserRound } from 'lucide-react'
-import { signUpOwner } from '../lib/auth-supabase'
+import { signInWithPassword, signUpOwner } from '../lib/auth-supabase'
 import { clearPendingAgency, getKnownAgencies, setActiveAgencyId, setPendingAgency, type PendingAgency } from '../lib/agency-session'
 import { getSettings, saveSettings, type AppLanguage } from '../lib/settings'
 import { readImageFile } from '../lib/property-image'
@@ -14,14 +14,14 @@ const copy = {
     eyebrow: 'PomaaaloDesk', title: 'Jednostavno upravljanje vašim smještajem.', body: 'Nekretnine, rezervacije, gosti i dnevni poslovi ostaju uredno odvojeni za svaki tim.',
     welcome: 'Dobro došli', welcomeHint: 'Odaberite kako želite početi.', create: 'Kreiraj novu agenciju', createHint: 'Postavite naziv, profilnu sliku i Owner račun.', signin: 'Prijavi se', signinHint: 'Nastavite u agenciju kojoj već pripadate.', invite: 'Imam pozivnicu', inviteHint: 'Prijavite se e-mailom na koji je stigla pozivnica.',
     known: 'Vaše agencije', back: 'Nazad', agencyTitle: 'Nova agencija', agencyBody: 'Ovo postaje odvojeni prostor za vaše nekretnine, rezervacije i tim.', agencyName: 'Naziv agencije', country: 'Država', language: 'Jezik', currency: 'Valuta', logo: 'Profilna slika agencije', optional: 'Neobavezno · velika slika se automatski optimizira', continue: 'Nastavi na Owner račun',
-    ownerTitle: 'Kreirajte Owner račun', ownerBody: 'Prva osoba automatski dobiva sva prava u ovoj agenciji.', ownerWorkspace: 'Vlasnik agencije', fullName: 'Ime i prezime', password: 'Lozinka', createWorkspace: 'Kreiraj agenciju', creating: 'Kreiranje…', existing: 'Već imate PomaaaloDesk račun?', existingAction: 'Prijavi se i kreiraj ovu agenciju', verify: 'Provjerite e-mail. Nakon potvrde otvorite ovu stranicu i agencija će se automatski kreirati.',
+    ownerTitle: 'Kreirajte Owner račun', ownerBody: 'Prva osoba automatski dobiva sva prava u ovoj agenciji.', ownerWorkspace: 'Vlasnik agencije', fullName: 'Ime i prezime', password: 'Lozinka', createWorkspace: 'Kreiraj agenciju', creating: 'Kreiranje…', existing: 'Već imate PomaaaloDesk račun?', existingAction: 'Prijavi se i kreiraj ovu agenciju', existingDetected: 'Ovaj e-mail već ima PomaaaloDesk račun. Prijavite se postojećom lozinkom i agencija će se automatski kreirati.', verify: 'Poslali smo link za potvrdu. Provjerite Inbox i Spam; nakon potvrde otvorite ovu stranicu i agencija će se automatski kreirati.',
     secure: 'Podaci svake agencije ostaju odvojeni', automatic: 'Nakon prijave ulazite direktno na Home', invitationTitle: 'Prihvatite pozivnicu', invitationBody: 'Otvorite link iz e-maila, postavite lozinku ako se to traži, pa se prijavite ovdje.',
   },
   en: {
     eyebrow: 'PomaaaloDesk', title: 'Simple management for your rental.', body: 'Properties, bookings, guests and daily operations stay clearly separated for every team.',
     welcome: 'Welcome', welcomeHint: 'Choose how you want to begin.', create: 'Create a new agency', createHint: 'Set the name, profile image and Owner account.', signin: 'Sign in', signinHint: 'Continue to an agency you already belong to.', invite: 'I have an invitation', inviteHint: 'Sign in with the email address that received the invitation.',
     known: 'Your agencies', back: 'Back', agencyTitle: 'New agency', agencyBody: 'This becomes a separate workspace for your properties, bookings and team.', agencyName: 'Agency name', country: 'Country', language: 'Language', currency: 'Currency', logo: 'Agency profile image', optional: 'Optional · large images are optimized automatically', continue: 'Continue to Owner account',
-    ownerTitle: 'Create the Owner account', ownerBody: 'The first person automatically receives full rights in this agency.', ownerWorkspace: 'Agency owner', fullName: 'Full name', password: 'Password', createWorkspace: 'Create agency', creating: 'Creating…', existing: 'Already have a PomaaaloDesk account?', existingAction: 'Sign in and create this agency', verify: 'Check your email. After confirmation, reopen this page and the agency will be created automatically.',
+    ownerTitle: 'Create the Owner account', ownerBody: 'The first person automatically receives full rights in this agency.', ownerWorkspace: 'Agency owner', fullName: 'Full name', password: 'Password', createWorkspace: 'Create agency', creating: 'Creating…', existing: 'Already have a PomaaaloDesk account?', existingAction: 'Sign in and create this agency', existingDetected: 'This email already has a PomaaaloDesk account. Sign in with its existing password and the agency will be created automatically.', verify: 'We sent a confirmation link. Check your Inbox and Spam; after confirming, reopen this page and the agency will be created automatically.',
     secure: 'Each agency’s data stays separate', automatic: 'After sign-in you go directly to Home', invitationTitle: 'Accept your invitation', invitationBody: 'Open the link from the email, set a password if requested, then sign in here.',
   },
 } as const
@@ -62,17 +62,33 @@ export function WelcomeScreen({ onAuthenticated }: { onAuthenticated: () => void
     event.preventDefault(); setError(null); setMessage(null)
     if (!fullName.trim() || !email.trim() || password.length < 8) { setError(language === 'hr' ? 'Unesite ime, ispravan e-mail i lozinku od najmanje 8 znakova.' : 'Enter a name, valid email and a password of at least 8 characters.'); return }
     setSubmitting(true)
-    const { data, error: authError } = await signUpOwner(email.trim(), password, fullName.trim())
+    const normalizedEmail = email.trim()
+    const { data, error: authError } = await signUpOwner(normalizedEmail, password, fullName.trim())
+    if (authError) { setSubmitting(false); setError(authError.message); return }
+    if (data.session) { setSubmitting(false); onAuthenticated(); return }
+
+    // Hosted Supabase deliberately returns an obfuscated user with no identities
+    // when signUp is called for an already-confirmed email. Try the supplied
+    // credentials so an existing owner can create the pending agency immediately.
+    if (data.user && (data.user.identities?.length ?? 0) === 0) {
+      const { data: signInData } = await signInWithPassword(normalizedEmail, password)
+      setSubmitting(false)
+      if (signInData.session) { onAuthenticated(); return }
+      setSignInCreatesAgency(true)
+      setMode('signin')
+      setMessage(c.existingDetected)
+      return
+    }
+
     setSubmitting(false)
-    if (authError) { setError(authError.message); return }
-    if (data.session) onAuthenticated(); else setMessage(c.verify)
+    setMessage(c.verify)
   }
 
   const card = mode === 'welcome' ? <>
     <div className="text-left"><p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-500">{c.eyebrow}</p><h2 className="mt-2 text-[2.8125rem] font-light leading-none tracking-tight text-[#17243d]">{c.welcome}</h2><p className="mt-1 text-sm text-slate-500">{c.welcomeHint}</p></div>
     {knownAgencies.length > 0 && <div className="mt-5"><p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">{c.known}</p><div className="flex gap-2 overflow-x-auto pb-1">{knownAgencies.map((item) => <button key={item.id} onClick={() => chooseAgency(item.id)} className="flex min-w-[150px] items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-2.5 text-left hover:border-violet-300"><AgencyAvatar name={item.name} image={item.logo_url}/><span className="min-w-0 truncate text-xs font-semibold">{item.name}</span></button>)}</div></div>}
     <div className="mt-5 grid gap-2.5"><WelcomeAction icon={Building2} title={c.create} body={c.createHint} primary onClick={() => {clearPendingAgency();setSignInCreatesAgency(false);go('agency')}}/><WelcomeAction icon={KeyRound} title={c.signin} body={c.signinHint} onClick={() => {clearPendingAgency();setSignInCreatesAgency(false);go('signin')}}/><WelcomeAction icon={Mail} title={c.invite} body={c.inviteHint} onClick={() => {clearPendingAgency();setSignInCreatesAgency(false);go('invitation')}}/></div>
-  </> : mode === 'signin' ? <Panel title={c.signin} body={c.signinHint} back={() => go(signInCreatesAgency?'owner':'welcome')} c={c}><LoginForm onAuthenticated={onAuthenticated}/></Panel>
+  </> : mode === 'signin' ? <Panel title={c.signin} body={c.signinHint} back={() => go(signInCreatesAgency?'owner':'welcome')} c={c}><LoginForm onAuthenticated={onAuthenticated} initialEmail={signInCreatesAgency ? email.trim() : ''}/></Panel>
     : mode === 'invitation' ? <Panel title={c.invitationTitle} body={c.invitationBody} back={() => go('welcome')} c={c}><LoginForm onAuthenticated={onAuthenticated}/></Panel>
       : mode === 'agency' ? <Panel title={c.agencyTitle} body={c.agencyBody} back={() => {clearPendingAgency();go('welcome')}} c={c}><form onSubmit={continueAgency} className="space-y-3.5">
         <label className="block text-xs font-semibold text-slate-600">{c.logo}<span className="mt-1.5 flex items-center gap-3"><AgencyAvatar name={agency.name || 'A'} image={agency.logo_url} large/><span className="flex-1"><span className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs text-slate-700"><ImagePlus size={15}/>{c.logo}<input type="file" accept="image/*" className="sr-only" onChange={(event) => void selectLogo(event.target.files?.[0])}/></span><span className="mt-1 block text-[10px] font-normal text-slate-400">{c.optional}</span></span></span></label>

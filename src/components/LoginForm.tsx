@@ -5,11 +5,12 @@ import { useT } from '../lib/i18n'
 
 type LoginFormProps = {
   onAuthenticated: () => void
+  initialEmail?: string
 }
 
-export function LoginForm({ onAuthenticated }: LoginFormProps) {
+export function LoginForm({ onAuthenticated, initialEmail = '' }: LoginFormProps) {
   const t = useT()
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(initialEmail)
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [emailError, setEmailError] = useState<string | null>(null)
