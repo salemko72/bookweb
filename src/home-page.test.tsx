@@ -26,6 +26,7 @@ describe('HomePage', () => {
     expect(screen.getByTestId('home-summary-grid')).toHaveClass('grid-cols-3')
     expect(screen.getAllByTestId('home-summary-card')).toHaveLength(3)
     expect(screen.getAllByTestId('home-summary-card').every((card) => card.className.includes('aspect-square'))).toBe(true)
+    expect(screen.getByTestId('home-summary-count-check-ins')).toHaveClass('text-[3.375rem]')
     expect(screen.getByTestId('home-summary-icon-check-ins')).toBeInTheDocument()
     expect(screen.getByTestId('home-today-panel')).toBeInTheDocument()
     expect(screen.getByTestId('home-tomorrow-panel')).toBeInTheDocument()

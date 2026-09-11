@@ -105,6 +105,15 @@ html:not(.dark) .app-shell :where(input, select, textarea)[class~="bg-white"] {
   backdrop-filter: blur(14px) saturate(115%);
 }
 
+/* Keep three comfortable cards on squarer desktop windows. Once the app has
+   nearly its full content width and the viewport is wider than 4:3, use the
+   extra horizontal room for a fourth property without shrinking the cards. */
+@media (min-width: 1360px) and (min-aspect-ratio: 134 / 100) {
+  .properties-grid-wide {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 
 html.dark { color-scheme: dark; }
 html.dark body, html.dark #root { background: #000 !important; color: #b8b8b8; }

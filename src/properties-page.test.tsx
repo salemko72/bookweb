@@ -86,6 +86,7 @@ describe('PropertiesPage', () => {
     render(<MemoryRouter><PropertiesPage role="admin" /></MemoryRouter>)
     await waitFor(() => expect(screen.getByTestId('properties-grid')).toHaveClass('md:grid-cols-3'))
     expect(screen.getByTestId('properties-grid')).toHaveClass('grid-cols-2')
+    expect(screen.getByTestId('properties-grid')).toHaveClass('properties-grid-wide')
   })
 
   it('opens the per-property calendar link editor', async () => {
